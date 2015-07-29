@@ -2,7 +2,7 @@
 
 var game = new Phaser.Game(1024, 644, Phaser.AUTO, "", { preload: preload, create: create, update: update, render: render });
 
-var blocks, borderrow = 8, columns = 16, floors, foods, groundlayer, holes, houses = [], man, rows = 14, worm, sound = {};
+var blocks, borderrow = 8, columns = 16, floors, foods, groundlayer, holelist = [], holes, houselist = [], man, settings = {music: false, sound: true}, rows = 14, worm, sound = {};
 
 function preload() {
 
@@ -151,14 +151,22 @@ function create() {
   game.input.keyboard.onUpCallback = keyInput;
 }
 
+function playMusic(music) {
+  if (settings.music) music.loopFull();
+}
+
+function playSound(sound) {
+  if (settings.sound) sound.play();
+}
+
 function start() {
-  sound.day.loopFull();
+  playMusic(sound.day);
 }
 
 function collectBlock(player, block) {
   if (!player.gamestate.hasItem) {
     player.gamestate.hasItem = true;
-    sound.pickupblock.play();
+    playSound(sound.pickupblock);
     block.kill();
   }
 }
@@ -166,52 +174,76 @@ function collectBlock(player, block) {
 function collectFood(player, food) {
   if (!player.gamestate.hasItem) {
     player.gamestate.hasItem = true;
-    sound.pickupfood.play();
+    playSound(sound.pickupfood);
     food.kill();
   }
 }
 
 var floor; // TODO temporary for debug.body
 function addFloor() {
-  var col, floor, house, row, targetrow;
+  var col, row, targetrow;
 
   if (man.gamestate.hasItem) {
     man.gamestate.hasItem = false;
     col = man.gamestate.col;
     row = man.gamestate.row;
     targetrow = row-1;
-    house = houses[col];
-    sound.buildblock.play();
-    if ( houses[col] ) { // house exists at player column
+    playSound(sound.buildblock);
+    if ( houselist[col] ) { // house exists at player column
       console.log("a");
-      houses[col]["height"]++;
-      _.each(houses[col]["tiles"], function(tile) {
+      houselist[col]["height"]++;
+      _.each(houselist[col]["tiles"], function(tile) {
         tile.y = positionY(targetrow);
         targetrow--;
       });
       floor = floors.create(positionX(col), positionY(row), "floor");
       floor.scale.setTo(0.25, 0.25);
       floor.anchor.setTo(0, 1);
-      houses[col]["tiles"].unshift(floor);
-    } else { // build a new one
+      houselist[col]["tiles"].unshift(floor); // insert floor at the beginning to grow the house
+    } else { // build a new house
       floor = floors.create(positionX(col), positionY(row), "roof");
       floor.scale.setTo(0.25, 0.25);
       floor.anchor.setTo(0, 1);
-      houses[col] = { height: 1, row: row, tiles: [floor] };
+      houselist[col] = { height: 1, row: row, tiles: [floor] }; // row: foot of the house
     }
   } else {
     // play sound unsuccessful
   }
 }
 
+function updateHouse(col) {
+  var targetrow;
+
+  if (houselist[col]) {
+    playSound(sound.movedown);
+    houselist[col]["row"]++;
+    targetrow = houselist[col]["row"];
+    _.each(houselist[col]["tiles"], function(tile) {
+      tile.y = positionY(targetrow);
+      targetrow--;
+    });
+  }
+}
+
 var hole; // TODO temporary for debug.body
 function digHole() {
+  var col, row;
+
   if (worm.gamestate.hasItem) {
     worm.gamestate.hasItem = false;
-    sound.dighole.play();
-    hole = holes.create(positionX(worm.gamestate.col), positionY(worm.gamestate.row), "hole");
+    col = worm.gamestate.col;
+    row = worm.gamestate.row;
+    playSound(sound.dighole);
+    hole = holes.create(positionX(col), positionY(row), "hole");
     hole.scale.setTo(0.25, 0.25);
     hole.anchor.setTo(0, 1);
+    if ( holelist[col] ) { // holes already exist in this column
+      holelist[col]["amount"]++;
+      holelist[col]["tiles"].push(hole);
+    } else { // first hole in this column
+      holelist[col] = { amount: 1, tiles: [hole] };
+    }
+    updateHouse(col);
   } else {
     // play sound unsuccessful
   }
