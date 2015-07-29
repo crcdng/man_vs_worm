@@ -2,7 +2,7 @@
 
 var game = new Phaser.Game(1024, 644, Phaser.AUTO, "", { preload: preload, create: create, update: update, render: render });
 
-var blocks, borderrow = 8, columns = 16, floors, foods, groundlayer, holes, man, rows = 14, worm, sound = {};
+var blocks, borderrow = 8, columns = 16, floors, foods, groundlayer, holes, houses = [], man, rows = 14, worm, sound = {};
 
 function preload() {
 
@@ -28,7 +28,7 @@ function preload() {
 
 }
 
-var block;
+var block; // TODO temporary for debug.body
 function createBlocks(n) {
   var i;
 
@@ -43,7 +43,7 @@ function createBlocks(n) {
   }
 }
 
-var food;
+var food; // TODO temporary for debug.body
 function createFoods(n) { // "Foods" consistency over spelling
   var i;
 
@@ -155,7 +155,7 @@ function start() {
   sound.day.loopFull();
 }
 
-function collectBlock (player, block) {
+function collectBlock(player, block) {
   if (!player.gamestate.hasItem) {
     player.gamestate.hasItem = true;
     sound.pickupblock.play();
@@ -163,7 +163,7 @@ function collectBlock (player, block) {
   }
 }
 
-function collectFood (player, food) {
+function collectFood(player, food) {
   if (!player.gamestate.hasItem) {
     player.gamestate.hasItem = true;
     sound.pickupfood.play();
@@ -171,21 +171,41 @@ function collectFood (player, food) {
   }
 }
 
-  var floor;
-function addFloor () {
+var floor; // TODO temporary for debug.body
+function addFloor() {
+  var col, floor, house, row, targetrow;
+
   if (man.gamestate.hasItem) {
     man.gamestate.hasItem = false;
+    col = man.gamestate.col;
+    row = man.gamestate.row;
+    targetrow = row-1;
+    house = houses[col];
     sound.buildblock.play();
-    floor = floors.create(positionX(man.gamestate.col), positionY(man.gamestate.row), "roof");
-    floor.scale.setTo(0.25, 0.25);
-    floor.anchor.setTo(0, 1);
+    if ( houses[col] ) { // house exists at player column
+      console.log("a");
+      houses[col]["height"]++;
+      _.each(houses[col]["tiles"], function(tile) {
+        tile.y = positionY(targetrow);
+        targetrow--;
+      });
+      floor = floors.create(positionX(col), positionY(row), "floor");
+      floor.scale.setTo(0.25, 0.25);
+      floor.anchor.setTo(0, 1);
+      houses[col]["tiles"].unshift(floor);
+    } else { // build a new one
+      floor = floors.create(positionX(col), positionY(row), "roof");
+      floor.scale.setTo(0.25, 0.25);
+      floor.anchor.setTo(0, 1);
+      houses[col] = { height: 1, row: row, tiles: [floor] };
+    }
   } else {
     // play sound unsuccessful
   }
 }
 
-  var hole;
-function digHole () {
+var hole; // TODO temporary for debug.body
+function digHole() {
   if (worm.gamestate.hasItem) {
     worm.gamestate.hasItem = false;
     sound.dighole.play();
@@ -198,25 +218,19 @@ function digHole () {
 }
 
 function update() {
-
   game.physics.arcade.collide(man, groundlayer);
   game.physics.arcade.collide(worm, groundlayer);
   game.physics.arcade.collide(blocks, groundlayer);
-
   game.physics.arcade.overlap(man, blocks, collectBlock, null, this);
   game.physics.arcade.overlap(worm, foods, collectFood, null, this);
-
-
 }
 
 function render() {
-
   game.debug.body(man);
   if (block) game.debug.body(block);
   if (floor) game.debug.body(floor);
   game.debug.body(worm);
   if (food) game.debug.body(food);
   if (hole) game.debug.body(hole);
-
 }
 
