@@ -2,7 +2,7 @@
 
 var game = new Phaser.Game(1024, 644, Phaser.AUTO, "", { preload: preload, create: create, update: update, render: render });
 
-var blocks, floors, foods, groundlayer, holes, man, worm, sound = {};
+var blocks, borderrow = 8, columns = 16, floors, foods, groundlayer, holes, man, rows = 14, worm, sound = {};
 
 function preload() {
 
@@ -28,31 +28,77 @@ function preload() {
 
 }
 
+var block;
 function createBlocks(n) {
-  var block, i;
+  var i;
 
   blocks = game.add.group();
   blocks.enableBody = true;
   for (i = 0; i < n; i++) {
-    block = blocks.create(game.world.width * Math.random(), game.world.height/2 - 50, "block");
+    block = blocks.create(positionX(Math.floor(columns * Math.random())), positionY(borderrow - 1), "block");
     block.scale.setTo(0.25, 0.25);
+    block.anchor.setTo(0, 1);
     block.body.gravity.y = 6;
     block.body.bounce.y = 0. + Math.random() * 0.2;
   }
 }
 
+var food;
 function createFoods(n) { // "Foods" consistency over spelling
-  var food, i;
+  var i;
 
   foods = game.add.group();
   foods.enableBody = true;
   for (i = 0; i < n; i++) {
-    food = foods.create(game.world.width * Math.random(), game.world.height/2 * (1 + Math.random()), "food");
+    food = foods.create(positionX(Math.floor(columns * Math.random())), positionY(borderrow + 1 +  Math.floor(Math.random() * (rows - borderrow))), "food");
     food.scale.setTo(0.25, 0.25);
+    food.anchor.setTo(0, 1);
+
   }
 }
 
+function positionX(column) {
+  return column * (game.world.width / columns);
+}
+
+function positionY(row) {
+  return row * (game.world.height / rows);
+}
+
+function keyInput(event) {
+  var key = event.keyCode;
+
+  // man
+  if (key === Phaser.Keyboard.A) {
+    man.gamestate.col = man.gamestate.col - 1;
+    if (man.gamestate.col < 0) man.gamestate.col = columns - 1;
+    man.x = positionX(man.gamestate.col);
+  } else if (key === Phaser.Keyboard.D) {
+    man.gamestate.col = (man.gamestate.col + 1) % columns;
+    man.x = positionX(man.gamestate.col);
+  } else if (key === Phaser.Keyboard.E) {
+    addFloor();
+  // worm
+  } else if (key === Phaser.Keyboard.J) {
+    worm.gamestate.col = Math.max(worm.gamestate.col - 1, 0);
+    worm.x = positionX(worm.gamestate.col);
+  } else if (key === Phaser.Keyboard.L) {
+    worm.gamestate.col = Math.min(worm.gamestate.col + 1, columns - 1);
+    worm.x = positionX(worm.gamestate.col);
+  } else if (key === Phaser.Keyboard.I) {
+    worm.gamestate.row = Math.max((worm.gamestate.row - 1), borderrow);
+    worm.y = positionY(worm.gamestate.row);
+  } else if (key === Phaser.Keyboard.K) {
+    worm.gamestate.row = Math.min(worm.gamestate.row + 1, rows);
+    worm.y = positionY(worm.gamestate.row);
+  } else if (key === Phaser.Keyboard.U) {
+    digHole();
+  }
+  // other
+}
+
 function create() {
+  var col, row;
 
   sound.day = game.add.audio("day");
   sound.night = game.add.audio("night");
@@ -73,19 +119,25 @@ function create() {
   groundlayer.resizeWorld();
   map.setCollision(4, true, "ground");
 
-  man = game.add.sprite(32, game.world.height - 600, "man");
+  col = 4;
+  row = 7;
+  man = game.add.sprite(positionX(col), positionY(row), "man");
   game.physics.arcade.enable(man);
   man.scale.setTo(0.25, 0.25);
+  man.anchor.setTo(0, 1);
   man.body.bounce.y = 0.2;
   man.body.gravity.y = 300;
   man.body.collideWorldBounds = true;
-  man.gamestate = { hasItem: false };
+  man.gamestate = { col: col, row: row, hasItem: false };
 
-  worm = game.add.sprite(320, game.world.height - 200, "worm");
-  worm.scale.setTo(0.25, 0.25);
+  col = 11;
+  row = 11;
+  worm = game.add.sprite(positionX(col), positionY(row), "worm");
   game.physics.arcade.enable(worm);
+  worm.scale.setTo(0.25, 0.25);
+  worm.anchor.setTo(0, 1);
   worm.body.collideWorldBounds = true;
-  worm.gamestate = { hasItem: false };
+  worm.gamestate = { col: col, row: row, hasItem: false };
 
   createBlocks(5);
   createFoods(5);
@@ -95,6 +147,8 @@ function create() {
 
   floors = game.add.group();
   floors.enableBody = true;
+
+  game.input.keyboard.onUpCallback = keyInput;
 }
 
 function start() {
@@ -117,24 +171,27 @@ function collectFood (player, food) {
   }
 }
 
-function addFloor () {
   var floor;
+function addFloor () {
   if (man.gamestate.hasItem) {
     man.gamestate.hasItem = false;
-    floor = floors.create(man.body.position.x, man.body.position.y, "roof");
+    sound.buildblock.play();
+    floor = floors.create(positionX(man.gamestate.col), positionY(man.gamestate.row), "roof");
     floor.scale.setTo(0.25, 0.25);
+    floor.anchor.setTo(0, 1);
   } else {
     // play sound unsuccessful
   }
 }
 
-function diggHole () {
   var hole;
+function digHole () {
   if (worm.gamestate.hasItem) {
     worm.gamestate.hasItem = false;
     sound.dighole.play();
-    hole = holes.create(worm.body.position.x, worm.body.position.y, "hole");
+    hole = holes.create(positionX(worm.gamestate.col), positionY(worm.gamestate.row), "hole");
     hole.scale.setTo(0.25, 0.25);
+    hole.anchor.setTo(0, 1);
   } else {
     // play sound unsuccessful
   }
@@ -149,34 +206,17 @@ function update() {
   game.physics.arcade.overlap(man, blocks, collectBlock, null, this);
   game.physics.arcade.overlap(worm, foods, collectFood, null, this);
 
-  man.body.velocity.x = 0;
-  worm.body.velocity.x = 0;
-  worm.body.velocity.y = 0;
-
-  if (game.input.keyboard.isDown(Phaser.Keyboard.A)) {
-    man.body.velocity.x = -150;
-  } else if (game.input.keyboard.isDown(Phaser.Keyboard.D)) {
-    man.body.velocity.x = 150;
-  } else if (game.input.keyboard.isDown(Phaser.Keyboard.E)) {
-    addFloor();
-  } else if (game.input.keyboard.isDown(Phaser.Keyboard.J)) {
-    worm.body.velocity.x = -150;
-  } else if (game.input.keyboard.isDown(Phaser.Keyboard.L)) {
-    worm.body.velocity.x = 150;
-  } else if (game.input.keyboard.isDown(Phaser.Keyboard.I)) {
-    worm.body.velocity.y = -150;
-  } else if (game.input.keyboard.isDown(Phaser.Keyboard.K)) {
-    worm.body.velocity.y = 150;
-  } else if (game.input.keyboard.isDown(Phaser.Keyboard.U)) {
-    diggHole();
-  }
 
 }
 
 function render() {
 
   game.debug.body(man);
+  if (block) game.debug.body(block);
+  if (floor) game.debug.body(floor);
   game.debug.body(worm);
+  if (food) game.debug.body(food);
+  if (hole) game.debug.body(hole);
 
 }
 
