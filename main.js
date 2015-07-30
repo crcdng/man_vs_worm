@@ -2,7 +2,7 @@
 
 var game = new Phaser.Game(1024, 644, Phaser.AUTO, "", { preload: preload, create: create, update: update, render: render });
 
-var blocks, borderrow = 8, columns = 16, floors, foods, groundlayer, holelist = [], holes, houselist = [], man, settings = {music: false, sound: true}, rows = 14, worm, sound = {};
+var blocks, borderrow = 8, columns = 16, floors, foods, groundlayer, holelist = [], holes, houselist = [], man, settings = {music: false, sound: true, debug: true}, rows = 14, worm, sound = {};
 
 function preload() {
 
@@ -26,35 +26,6 @@ function preload() {
   game.load.audio("buildblock", ["/assets/snd/ManVsWorm-Manbuildup.ogg", "/assets/snd/ManVsWorm-Manbuildup.mp3"]);
   game.load.audio("movedown", ["/assets/snd/ManVsWorm-Housefallsdown.ogg", "/assets/snd/ManVsWorm-Housefallsdown.mp3"]);
 
-}
-
-var block; // TODO temporary for debug.body
-function createBlocks(n) {
-  var i;
-
-  blocks = game.add.group();
-  blocks.enableBody = true;
-  for (i = 0; i < n; i++) {
-    block = blocks.create(positionX(Math.floor(columns * Math.random())), positionY(borderrow - 1), "block");
-    block.scale.setTo(0.25, 0.25);
-    block.anchor.setTo(0, 1);
-    block.body.gravity.y = 6;
-    block.body.bounce.y = 0. + Math.random() * 0.2;
-  }
-}
-
-var food; // TODO temporary for debug.body
-function createFoods(n) { // "Foods" consistency over spelling
-  var i;
-
-  foods = game.add.group();
-  foods.enableBody = true;
-  for (i = 0; i < n; i++) {
-    food = foods.create(positionX(Math.floor(columns * Math.random())), positionY(borderrow + 1 +  Math.floor(Math.random() * (rows - borderrow))), "food");
-    food.scale.setTo(0.25, 0.25);
-    food.anchor.setTo(0, 1);
-
-  }
 }
 
 function positionX(column) {
@@ -99,6 +70,32 @@ function keyInput(event) {
 
 function create() {
   var col, row;
+
+  function createBlocks(n) {
+    var block, i;
+
+    blocks = game.add.group();
+    blocks.enableBody = true;
+    for (i = 0; i < n; i++) {
+      block = blocks.create(positionX(Math.floor(columns * Math.random())), positionY(borderrow - 1), "block");
+      block.scale.setTo(0.25, 0.25);
+      block.anchor.setTo(0, 1);
+      block.body.gravity.y = 6;
+      block.body.bounce.y = 0. + Math.random() * 0.2;
+    }
+  }
+  function createFoods(n) { // "Foods" consistency over spelling
+  var food, i;
+
+  foods = game.add.group();
+  foods.enableBody = true;
+  for (i = 0; i < n; i++) {
+    food = foods.create(positionX(Math.floor(columns * Math.random())), positionY(borderrow + 1 + Math.floor(Math.random() * (rows - borderrow))), "food");
+    food.scale.setTo(0.25, 0.25);
+    food.anchor.setTo(0, 1);
+
+  }
+}
 
   sound.day = game.add.audio("day");
   sound.night = game.add.audio("night");
@@ -179,9 +176,8 @@ function collectFood(player, food) {
   }
 }
 
-var floor; // TODO temporary for debug.body
 function addFloor() {
-  var col, row, targetrow;
+  var col, floor, row, targetrow;
 
   if (man.gamestate.hasItem) {
     man.gamestate.hasItem = false;
@@ -225,9 +221,8 @@ function updateHouse(col) {
   }
 }
 
-var hole; // TODO temporary for debug.body
 function digHole() {
-  var col, row;
+  var col, hole, row;
 
   if (worm.gamestate.hasItem) {
     worm.gamestate.hasItem = false;
@@ -258,11 +253,21 @@ function update() {
 }
 
 function render() {
-  game.debug.body(man);
-  if (block) game.debug.body(block);
-  if (floor) game.debug.body(floor);
-  game.debug.body(worm);
-  if (food) game.debug.body(food);
-  if (hole) game.debug.body(hole);
+  if (settings.debug) { // show body and sprite boundaries
+    game.debug.body(man, "#ff00ff", false);
+    game.debug.body(worm, "#ff00ff", false);
+    blocks.forEachAlive(function(block) { game.debug.body(block, "#ff00ff", false); });
+    floors.forEachAlive(function(floor) { game.debug.body(floor, "#ff00ff", false) });
+    foods.forEachAlive(function(food) { game.debug.body(food, "#ff00ff", false) });
+    holes.forEachAlive(function(hole) { game.debug.body(hole, "#ff00ff", false) });
+    game.debug.spriteBounds(man, "#00ff0088", false);
+    game.debug.spriteBounds(worm, "#00ff0088", false);
+    blocks.forEachAlive(function(block) { game.debug.spriteBounds(block, "#00ff0088", false); });
+    floors.forEachAlive(function(floor) { game.debug.spriteBounds(floor, "#00ff0088", false) });
+    foods.forEachAlive(function(food) { game.debug.spriteBounds(food, "#00ff0088", false) });
+    holes.forEachAlive(function(hole) { game.debug.spriteBounds(hole, "#00ff0088", false) });
+
+    game.debug.inputInfo(32, 32);
+  }
 }
 
