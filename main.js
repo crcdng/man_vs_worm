@@ -2,7 +2,7 @@
 
 var game = new Phaser.Game(1024, 644, Phaser.AUTO, "", { preload: preload, create: create, update: update, render: render });
 
-var blocks, borderrow = 8, columns = 16, floors, foods, groundlayer, holelist = [], holes, houselist = [], man, settings = {music: false, sound: true, debug: true}, rows = 14, worm, sound = {};
+var blocks, borderrow = 8, columns = 16, floors, foods, groundlayer, holelist = [], holes, houselist = [], man, numBlocks = 7, numFoods = 7, settings = {music: false, sound: true, debug: true}, rows = 14, winner = null, worm, sound = {};
 
 function preload() {
 
@@ -136,8 +136,8 @@ function create() {
   worm.body.collideWorldBounds = true;
   worm.gamestate = { col: col, row: row, hasItem: false };
 
-  createBlocks(5);
-  createFoods(5);
+  createBlocks(numBlocks);
+  createFoods(numFoods);
 
   holes = game.add.group();
   holes.enableBody = true;
@@ -176,34 +176,18 @@ function collectFood(player, food) {
   }
 }
 
-function addFloor() {
-  var col, floor, row, targetrow;
-
-  if (man.gamestate.hasItem) {
-    man.gamestate.hasItem = false;
-    col = man.gamestate.col;
-    row = man.gamestate.row;
-    targetrow = row-1;
-    playSound(sound.buildblock);
-    if ( houselist[col] ) { // house exists at player column
-      console.log("a");
-      houselist[col]["height"]++;
-      _.each(houselist[col]["tiles"], function(tile) {
-        tile.y = positionY(targetrow);
-        targetrow--;
-      });
-      floor = floors.create(positionX(col), positionY(row), "floor");
-      floor.scale.setTo(0.25, 0.25);
-      floor.anchor.setTo(0, 1);
-      houselist[col]["tiles"].unshift(floor); // insert floor at the beginning to grow the house
-    } else { // build a new house
-      floor = floors.create(positionX(col), positionY(row), "roof");
-      floor.scale.setTo(0.25, 0.25);
-      floor.anchor.setTo(0, 1);
-      houselist[col] = { height: 1, row: row, tiles: [floor] }; // row: foot of the house
+function checkWin(potentialWinner, col) {
+  if (winner !== null) return; // we have a winner already
+  if (potentialWinner === man) {
+    if (houselist[col]["height"] >= borderrow - 1) {
+      winner = man;
+      console.log("Man wins!");
     }
-  } else {
-    // play sound unsuccessful
+  } else if (potentialWinner === worm) {
+    if (houselist[col]["row"] >= rows) {
+      winner = worm;
+      console.log("Worm wins!");
+    }
   }
 }
 
@@ -218,6 +202,38 @@ function updateHouse(col) {
       tile.y = positionY(targetrow);
       targetrow--;
     });
+    checkWin(worm, col);
+  }
+}
+
+function addFloor() {
+  var col, floor, row, targetrow;
+
+  if (man.gamestate.hasItem) {
+    man.gamestate.hasItem = false;
+    col = man.gamestate.col;
+    row = man.gamestate.row;
+    targetrow = row-1;
+    playSound(sound.buildblock);
+    if ( houselist[col] ) { // house exists at player column
+      houselist[col]["height"]++;
+      _.each(houselist[col]["tiles"], function(tile) {
+        tile.y = positionY(targetrow);
+        targetrow--;
+      });
+      floor = floors.create(positionX(col), positionY(row), "floor");
+      floor.scale.setTo(0.25, 0.25);
+      floor.anchor.setTo(0, 1);
+      houselist[col]["tiles"].unshift(floor); // insert floor at the beginning to grow the house
+      checkWin(man, col);
+    } else { // build a new house
+      floor = floors.create(positionX(col), positionY(row), "roof");
+      floor.scale.setTo(0.25, 0.25);
+      floor.anchor.setTo(0, 1);
+      houselist[col] = { height: 1, row: row, tiles: [floor] }; // row: foot of the house
+    }
+  } else {
+    // play sound unsuccessful
   }
 }
 
