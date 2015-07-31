@@ -39,12 +39,12 @@ function addFloor() {
 function checkWin(potentialWinner, col) {
   if (winner !== null) return; // we have a winner already
   if (potentialWinner === man) {
-    if (houselist[col]["height"] >= borderrow - 1) {
+    if (houselist[col].row - houselist[col].height <= 0) {
       winner = man;
       console.log("Man wins!");
     }
   } else if (potentialWinner === worm) {
-    if (houselist[col]["row"] >= rows) {
+    if (houselist[col].row >= rows) {
       winner = worm;
       console.log("Worm wins!");
     }
