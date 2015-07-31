@@ -2,38 +2,200 @@
 
 var game = new Phaser.Game(1024, 644, Phaser.AUTO, "", { preload: preload, create: create, update: update, render: render });
 
-var blocks, borderrow = 8, columns = 16, floors, foods, groundlayer, holelist = [], holes, houselist = [], man, numBlocks = 7, numFoods = 7, settings = {music: false, sound: true, debug: true}, rows = 14, winner = null, worm, sound = {};
+var blocks, borderrow = 8, columns = 16, dayLayer, floors, foods, groundLayer, holelist = [], holes, houselist = [], lengthDayNight = 10, man, map, moon, nightLayer, numBlocks = 7, numFoods = 7, settings = {music: true, sound: true, debug: false}, sun, rows = 14, winner = null, worm, sound = {};
 
-function preload() {
+function addFloor() {
+  var col, floor, row, targetrow;
 
-  game.load.tilemap("map", "/assets/tilemap.json", null, Phaser.Tilemap.TILED_JSON);
-  game.load.image("ground", "/assets/spritesheets/tiles_vierteln_0.png");
-  game.load.image("man", "/assets/sprites/hero01.png");
-  game.load.image("worm", "/assets/sprites/worm01.png");
-  game.load.image("block", "/assets/sprites/house_block copy.png");
-  game.load.image("food", "/assets/sprites/ground_flower.png");
-  game.load.image("hole", "/assets/sprites/ground_hole.png");
-  game.load.image("floor", "/assets/sprites/house.png");
-  game.load.image("roof", "/assets/sprites/house_roof.png");
-
-  game.load.audio("day", ["/assets/snd/ManVsWorm-Day_30sec_128bpm.ogg", "/assets/snd/ManVsWorm-Day_30sec_128bpm.mp3"]);
-  game.load.audio("night", ["assets/snd/ManVsWorm-Night_30sec_128bpm.ogg", "assets/snd/ManVsWorm-Night_30sec_128bpm.mp3"]);
-  game.load.audio("manwins", ["/assets/snd/ManVsWorm-Manwin.ogg", "/assets/snd/ManVsWorm-Manwin.mp3"]);
-  game.load.audio("wormwins", ["/assets/snd/ManVsWorm-Wormwin.ogg", "/assets/snd/ManVsWorm-Wormwin.mp3"]);
-  game.load.audio("pickupfood", ["/assets/snd/ManVsWorm-WormswallowsFood.ogg", "/assets/snd/ManVsWorm-WormswallowsFood.mp3"]);
-  game.load.audio("dighole", ["/assets/snd/ManVsWorm-Wormdiggahole.ogg", "/assets/snd/ManVsWorm-Wormdiggahole.mp3"]);
-  game.load.audio("pickupblock", ["/assets/snd/ManVsWorm-Manpickup.ogg", "/assets/snd/ManVsWorm-Manpickup.mp3"]);
-  game.load.audio("buildblock", ["/assets/snd/ManVsWorm-Manbuildup.ogg", "/assets/snd/ManVsWorm-Manbuildup.mp3"]);
-  game.load.audio("movedown", ["/assets/snd/ManVsWorm-Housefallsdown.ogg", "/assets/snd/ManVsWorm-Housefallsdown.mp3"]);
-
+  if (man.gamestate.hasItem) {
+    man.gamestate.hasItem = false;
+    col = man.gamestate.col;
+    row = man.gamestate.row;
+    targetrow = row-1;
+    playSound(sound.buildblock);
+    if ( houselist[col] ) { // house exists at player column
+      houselist[col]["height"]++;
+      _.each(houselist[col]["tiles"], function(tile) {
+        tile.y = positionY(targetrow);
+        targetrow--;
+      });
+      floor = floors.create(positionX(col), positionY(row), "floor");
+      floor.scale.setTo(0.25, 0.25);
+      floor.anchor.setTo(0, 1);
+      houselist[col]["tiles"].unshift(floor); // insert floor at the beginning to grow the house
+      checkWin(man, col);
+    } else { // build a new house
+      floor = floors.create(positionX(col), positionY(row), "roof");
+      floor.scale.setTo(0.25, 0.25);
+      floor.anchor.setTo(0, 1);
+      houselist[col] = { height: 1, row: row, tiles: [floor] }; // row: foot of the house
+    }
+  } else {
+    // play sound unsuccessful
+  }
 }
 
-function positionX(column) {
-  return column * (game.world.width / columns);
+function checkWin(potentialWinner, col) {
+  if (winner !== null) return; // we have a winner already
+  if (potentialWinner === man) {
+    if (houselist[col]["height"] >= borderrow - 1) {
+      winner = man;
+      console.log("Man wins!");
+    }
+  } else if (potentialWinner === worm) {
+    if (houselist[col]["row"] >= rows) {
+      winner = worm;
+      console.log("Worm wins!");
+    }
+  }
 }
 
-function positionY(row) {
-  return row * (game.world.height / rows);
+function collectBlock(player, block) {
+  if (!player.gamestate.hasItem) {
+    player.gamestate.hasItem = true;
+    playSound(sound.pickupblock);
+    block.kill();
+  }
+}
+
+function collectFood(player, food) {
+  if (!player.gamestate.hasItem) {
+    player.gamestate.hasItem = true;
+    playSound(sound.pickupfood);
+    food.kill();
+  }
+}
+
+function create() {
+  var col, row;
+
+  sound.day = game.add.audio("day");
+  sound.night = game.add.audio("night");
+  sound.manwins = game.add.audio("manwins");
+  sound.wormwins = game.add.audio("wormwins");
+  sound.pickupfood = game.add.audio("pickupfood");
+  sound.dighole = game.add.audio("dighole");
+  sound.pickupblock = game.add.audio("pickupblock");
+  sound.buildblock = game.add.audio("buildblock");
+  sound.movedown = game.add.audio("movedown");
+
+  game.physics.startSystem(Phaser.Physics.ARCADE);
+
+  map = game.add.tilemap("map");
+  map.addTilesetImage("tiles_vierteln_0","ground");
+  groundLayer = map.createLayer("ground");
+  groundLayer.resizeWorld();
+  nightLayer = map.createLayer("night");
+  dayLayer = map.createLayer("day");
+  map.setCollision(4, true, "ground");
+
+  col = 3;
+  row = 2;
+  sun = game.add.sprite(positionX(col), positionY(row), "sun");
+  game.physics.arcade.enable(sun);
+  sun.scale.setTo(0.25, 0.25);
+  sun.anchor.setTo(0, 1);
+  sun.gamestate = { col: col, row: row, startCol: col, steps: 10 };
+
+  col = 3;
+  row = 2;
+  moon = game.add.sprite(positionX(col), positionY(row), "moon");
+  game.physics.arcade.enable(moon);
+  moon.scale.setTo(0.25, 0.25);
+  moon.anchor.setTo(0, 1);
+  moon.gamestate = { col: col, row: row, startCol: col, steps: 10 };
+
+  col = 4;
+  row = 7;
+  man = game.add.sprite(positionX(col), positionY(row), "man");
+  game.physics.arcade.enable(man);
+  man.scale.setTo(0.25, 0.25);
+  man.anchor.setTo(0, 1);
+  man.body.bounce.y = 0.2;
+  man.body.gravity.y = 300;
+  man.body.collideWorldBounds = true;
+  man.gamestate = { col: col, row: row, hasItem: false };
+
+  col = 11;
+  row = 11;
+  worm = game.add.sprite(positionX(col), positionY(row), "worm");
+  game.physics.arcade.enable(worm);
+  worm.scale.setTo(0.25, 0.25);
+  worm.anchor.setTo(0, 1);
+  worm.body.collideWorldBounds = true;
+  worm.gamestate = { col: col, row: row, hasItem: false };
+
+  game.input.keyboard.onUpCallback = keyInput;
+  game.sound.setDecodedCallback(_.values(sound), start, this); // start the game when sounds are decoded
+}
+
+function createBlocks(n) {
+  var block, i;
+
+  if (blocks) blocks.destroy(); // new group for each day / night
+  blocks = game.add.group();
+  blocks.enableBody = true;
+  for (i = 0; i < n; i++) {
+    block = blocks.create(positionX(Math.floor(columns * Math.random())), positionY(borderrow - 1), "block");
+    block.scale.setTo(0.25, 0.25);
+    block.anchor.setTo(0, 1);
+    block.body.gravity.y = 6;
+    block.body.bounce.y = 0.2;
+  }
+}
+
+function createFoods(n) { // "Foods" consistency over spelling
+  var food, i;
+
+  if (foods) foods.destroy(); // new group for each day / night
+  foods = game.add.group();
+  foods.enableBody = true;
+  for (i = 0; i < n; i++) {
+    food = foods.create(positionX(Math.floor(columns * Math.random())), positionY(borderrow + 1 + Math.floor(Math.random() * (rows - borderrow))), "food");
+    food.scale.setTo(0.25, 0.25);
+    food.anchor.setTo(0, 1);
+  }
+}
+
+function day(n) {
+  sun.visible = true;
+  moon.visible = false;
+  dayLayer.visible = true;
+  nightLayer.visible = false;
+  sun.gamestate.col = sun.gamestate.startCol;
+  sun.x = positionX(sun.gamestate.col);
+  game.time.events.repeat(lengthDayNight/sun.gamestate.steps * 1000, sun.gamestate.steps - 1, function() {
+    sun.gamestate.col++;
+    sun.x = positionX(sun.gamestate.col);
+  }, this);
+  createBlocks(numBlocks);
+  createFoods(numFoods);
+  if (sound.night.isPlaying) sound.night.stop();
+  playMusic(sound.day);
+  game.time.events.add(lengthDayNight * 1000, night, this, n);
+}
+
+function digHole() {
+  var col, hole, row;
+
+  if (worm.gamestate.hasItem) {
+    worm.gamestate.hasItem = false;
+    col = worm.gamestate.col;
+    row = worm.gamestate.row;
+    playSound(sound.dighole);
+    hole = holes.create(positionX(col), positionY(row), "hole");
+    hole.scale.setTo(0.25, 0.25);
+    hole.anchor.setTo(0, 1);
+    if ( holelist[col] ) { // holes already exist in this column
+      holelist[col]["amount"]++;
+      holelist[col]["tiles"].push(hole);
+    } else { // first hole in this column
+      holelist[col] = { amount: 1, tiles: [hole] };
+    }
+    updateHouse(col);
+  } else {
+    // play sound unsuccessful
+  }
 }
 
 function keyInput(event) {
@@ -68,84 +230,23 @@ function keyInput(event) {
   // other
 }
 
-function create() {
-  var col, row;
-
-  function createBlocks(n) {
-    var block, i;
-
-    blocks = game.add.group();
-    blocks.enableBody = true;
-    for (i = 0; i < n; i++) {
-      block = blocks.create(positionX(Math.floor(columns * Math.random())), positionY(borderrow - 1), "block");
-      block.scale.setTo(0.25, 0.25);
-      block.anchor.setTo(0, 1);
-      block.body.gravity.y = 6;
-      block.body.bounce.y = 0. + Math.random() * 0.2;
-    }
-  }
-  function createFoods(n) { // "Foods" consistency over spelling
-  var food, i;
-
-  foods = game.add.group();
-  foods.enableBody = true;
-  for (i = 0; i < n; i++) {
-    food = foods.create(positionX(Math.floor(columns * Math.random())), positionY(borderrow + 1 + Math.floor(Math.random() * (rows - borderrow))), "food");
-    food.scale.setTo(0.25, 0.25);
-    food.anchor.setTo(0, 1);
-
-  }
-}
-
-  sound.day = game.add.audio("day");
-  sound.night = game.add.audio("night");
-  sound.manwins = game.add.audio("manwins");
-  sound.wormwins = game.add.audio("wormwins");
-  sound.pickupfood = game.add.audio("pickupfood");
-  sound.dighole = game.add.audio("dighole");
-  sound.pickupblock = game.add.audio("pickupblock");
-  sound.buildblock = game.add.audio("buildblock");
-  sound.movedown = game.add.audio("movedown");
-  game.sound.setDecodedCallback(_.values(sound), start, this);
-
-  game.physics.startSystem(Phaser.Physics.ARCADE);
-
-  var map = game.add.tilemap("map");
-  map.addTilesetImage("tiles_vierteln_0","ground");
-  groundlayer = map.createLayer("ground");
-  groundlayer.resizeWorld();
-  map.setCollision(4, true, "ground");
-
-  col = 4;
-  row = 7;
-  man = game.add.sprite(positionX(col), positionY(row), "man");
-  game.physics.arcade.enable(man);
-  man.scale.setTo(0.25, 0.25);
-  man.anchor.setTo(0, 1);
-  man.body.bounce.y = 0.2;
-  man.body.gravity.y = 300;
-  man.body.collideWorldBounds = true;
-  man.gamestate = { col: col, row: row, hasItem: false };
-
-  col = 11;
-  row = 11;
-  worm = game.add.sprite(positionX(col), positionY(row), "worm");
-  game.physics.arcade.enable(worm);
-  worm.scale.setTo(0.25, 0.25);
-  worm.anchor.setTo(0, 1);
-  worm.body.collideWorldBounds = true;
-  worm.gamestate = { col: col, row: row, hasItem: false };
-
+function night(n) {
+  sun.visible = false;
+  moon.visible = true;
+  nightLayer.visible = true;
+  dayLayer.visible = false;
+  moon.gamestate.col = moon.gamestate.startCol;
+  moon.x = positionX(moon.gamestate.col);
+  game.time.events.repeat(lengthDayNight/moon.gamestate.steps * 1000, moon.gamestate.steps - 1, function() {
+    moon.gamestate.col++;
+    moon.x = positionX(moon.gamestate.col);
+  }, this);
   createBlocks(numBlocks);
   createFoods(numFoods);
-
-  holes = game.add.group();
-  holes.enableBody = true;
-
-  floors = game.add.group();
-  floors.enableBody = true;
-
-  game.input.keyboard.onUpCallback = keyInput;
+  if (sound.day.isPlaying) sound.day.stop();
+  playMusic(sound.night);
+  n++;
+  game.time.events.add(lengthDayNight * 1000, day, this, n);
 }
 
 function playMusic(music) {
@@ -156,116 +257,37 @@ function playSound(sound) {
   if (settings.sound) sound.play();
 }
 
-function start() {
-  playMusic(sound.day);
+function positionX(column) {
+  return column * (game.world.width / columns);
 }
 
-function collectBlock(player, block) {
-  if (!player.gamestate.hasItem) {
-    player.gamestate.hasItem = true;
-    playSound(sound.pickupblock);
-    block.kill();
-  }
+function positionY(row) {
+  return row * (game.world.height / rows);
 }
 
-function collectFood(player, food) {
-  if (!player.gamestate.hasItem) {
-    player.gamestate.hasItem = true;
-    playSound(sound.pickupfood);
-    food.kill();
-  }
-}
+function preload() {
 
-function checkWin(potentialWinner, col) {
-  if (winner !== null) return; // we have a winner already
-  if (potentialWinner === man) {
-    if (houselist[col]["height"] >= borderrow - 1) {
-      winner = man;
-      console.log("Man wins!");
-    }
-  } else if (potentialWinner === worm) {
-    if (houselist[col]["row"] >= rows) {
-      winner = worm;
-      console.log("Worm wins!");
-    }
-  }
-}
+  game.load.tilemap("map", "/assets/tilemap.json", null, Phaser.Tilemap.TILED_JSON);
+  game.load.image("block", "/assets/sprites/house_block copy.png");
+  game.load.image("floor", "/assets/sprites/house.png");
+  game.load.image("food", "/assets/sprites/ground_flower.png");
+  game.load.image("ground", "/assets/spritesheets/tiles_vierteln_0.png");
+  game.load.image("hole", "/assets/sprites/ground_hole.png");
+  game.load.image("man", "/assets/sprites/hero01.png");
+  game.load.image("moon", "/assets/sprites/sky_dark_moon.png");
+  game.load.image("roof", "/assets/sprites/house_roof.png");
+  game.load.image("sun", "/assets/sprites/sky_sun.png");
+  game.load.image("worm", "/assets/sprites/worm01.png");
 
-function updateHouse(col) {
-  var targetrow;
-
-  if (houselist[col]) {
-    playSound(sound.movedown);
-    houselist[col]["row"]++;
-    targetrow = houselist[col]["row"];
-    _.each(houselist[col]["tiles"], function(tile) {
-      tile.y = positionY(targetrow);
-      targetrow--;
-    });
-    checkWin(worm, col);
-  }
-}
-
-function addFloor() {
-  var col, floor, row, targetrow;
-
-  if (man.gamestate.hasItem) {
-    man.gamestate.hasItem = false;
-    col = man.gamestate.col;
-    row = man.gamestate.row;
-    targetrow = row-1;
-    playSound(sound.buildblock);
-    if ( houselist[col] ) { // house exists at player column
-      houselist[col]["height"]++;
-      _.each(houselist[col]["tiles"], function(tile) {
-        tile.y = positionY(targetrow);
-        targetrow--;
-      });
-      floor = floors.create(positionX(col), positionY(row), "floor");
-      floor.scale.setTo(0.25, 0.25);
-      floor.anchor.setTo(0, 1);
-      houselist[col]["tiles"].unshift(floor); // insert floor at the beginning to grow the house
-      checkWin(man, col);
-    } else { // build a new house
-      floor = floors.create(positionX(col), positionY(row), "roof");
-      floor.scale.setTo(0.25, 0.25);
-      floor.anchor.setTo(0, 1);
-      houselist[col] = { height: 1, row: row, tiles: [floor] }; // row: foot of the house
-    }
-  } else {
-    // play sound unsuccessful
-  }
-}
-
-function digHole() {
-  var col, hole, row;
-
-  if (worm.gamestate.hasItem) {
-    worm.gamestate.hasItem = false;
-    col = worm.gamestate.col;
-    row = worm.gamestate.row;
-    playSound(sound.dighole);
-    hole = holes.create(positionX(col), positionY(row), "hole");
-    hole.scale.setTo(0.25, 0.25);
-    hole.anchor.setTo(0, 1);
-    if ( holelist[col] ) { // holes already exist in this column
-      holelist[col]["amount"]++;
-      holelist[col]["tiles"].push(hole);
-    } else { // first hole in this column
-      holelist[col] = { amount: 1, tiles: [hole] };
-    }
-    updateHouse(col);
-  } else {
-    // play sound unsuccessful
-  }
-}
-
-function update() {
-  game.physics.arcade.collide(man, groundlayer);
-  game.physics.arcade.collide(worm, groundlayer);
-  game.physics.arcade.collide(blocks, groundlayer);
-  game.physics.arcade.overlap(man, blocks, collectBlock, null, this);
-  game.physics.arcade.overlap(worm, foods, collectFood, null, this);
+  game.load.audio("buildblock", ["/assets/snd/ManVsWorm-Manbuildup.ogg", "/assets/snd/ManVsWorm-Manbuildup.mp3"]);
+  game.load.audio("day", ["/assets/snd/ManVsWorm-Day_30sec_128bpm.ogg", "/assets/snd/ManVsWorm-Day_30sec_128bpm.mp3"]);
+  game.load.audio("dighole", ["/assets/snd/ManVsWorm-Wormdiggahole.ogg", "/assets/snd/ManVsWorm-Wormdiggahole.mp3"]);
+  game.load.audio("manwins", ["/assets/snd/ManVsWorm-Manwin.ogg", "/assets/snd/ManVsWorm-Manwin.mp3"]);
+  game.load.audio("movedown", ["/assets/snd/ManVsWorm-Housefallsdown.ogg", "/assets/snd/ManVsWorm-Housefallsdown.mp3"]);
+  game.load.audio("night", ["assets/snd/ManVsWorm-Night_30sec_128bpm.ogg", "assets/snd/ManVsWorm-Night_30sec_128bpm.mp3"]);
+  game.load.audio("pickupblock", ["/assets/snd/ManVsWorm-Manpickup.ogg", "/assets/snd/ManVsWorm-Manpickup.mp3"]);
+  game.load.audio("pickupfood", ["/assets/snd/ManVsWorm-WormswallowsFood.ogg", "/assets/snd/ManVsWorm-WormswallowsFood.mp3"]);
+  game.load.audio("wormwins", ["/assets/snd/ManVsWorm-Wormwin.ogg", "/assets/snd/ManVsWorm-Wormwin.mp3"]);
 }
 
 function render() {
@@ -287,3 +309,29 @@ function render() {
   }
 }
 
+function start() {
+  day(1);
+}
+
+function update() {
+  game.physics.arcade.collide(man, groundLayer);
+  game.physics.arcade.collide(worm, groundLayer);
+  game.physics.arcade.collide(blocks, groundLayer);
+  game.physics.arcade.overlap(man, blocks, collectBlock, null, this);
+  game.physics.arcade.overlap(worm, foods, collectFood, null, this);
+}
+
+function updateHouse(col) {
+  var targetrow;
+
+  if (houselist[col]) {
+    playSound(sound.movedown);
+    houselist[col]["row"]++;
+    targetrow = houselist[col]["row"];
+    _.each(houselist[col]["tiles"], function(tile) {
+      tile.y = positionY(targetrow);
+      targetrow--;
+    });
+    checkWin(worm, col);
+  }
+}
