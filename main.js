@@ -1,6 +1,6 @@
 "use strict";
 
-var game = new Phaser.Game(1024, 644, Phaser.AUTO, "", { preload: preload, create: create, update: update, render: render });
+var game = new Phaser.Game(1024, 644, Phaser.AUTO, "", { preload: preload, init: init, create: create, update: update, render: render });
 
 var blocks, borderrow = 8, columns = 16, dayLayer, floors, foods, groundLayer, holelist = [], holes, houselist = [], lengthDayNight = 10, man, map, moon, nightLayer, settings = {music: true, sound: true, debug: false}, sun, rows = 14, winner = null, worm, sound = {};
 
@@ -204,6 +204,12 @@ function digHole() {
   } else {
     // play sound unsuccessful
   }
+}
+
+function init() {
+  game.scale.scaleMode = Phaser.ScaleManager.NO_SCALE;
+  game.scale.pageAlignVertically = true;
+  game.scale.pageAlignHorizontally = true;
 }
 
 function keyInput(event) {
