@@ -2,7 +2,7 @@
 
 var game = new Phaser.Game(1024, 644, Phaser.AUTO, "", { preload: preload, create: create, update: update, render: render });
 
-var blocks, borderrow = 8, columns = 16, dayLayer, floors, foods, groundLayer, holelist = [], holes, houselist = [], lengthDayNight = 10, man, map, moon, nightLayer, numBlocks = 7, numFoods = 7, settings = {music: true, sound: true, debug: false}, sun, rows = 14, winner = null, worm, sound = {};
+var blocks, borderrow = 8, columns = 16, dayLayer, floors, foods, groundLayer, holelist = [], holes, houselist = [], lengthDayNight = 10, man, map, moon, nightLayer, settings = {music: true, sound: true, debug: false}, sun, rows = 14, winner = null, worm, sound = {};
 
 function addFloor() {
   var col, floor, row, targetrow;
@@ -10,21 +10,22 @@ function addFloor() {
   if (man.gamestate.hasItem) {
     man.gamestate.hasItem = false;
     col = man.gamestate.col;
-    row = man.gamestate.row;
-    targetrow = row-1;
     playSound(sound.buildblock);
     if ( houselist[col] ) { // house exists at player column
-      houselist[col]["height"]++;
-      _.each(houselist[col]["tiles"], function(tile) {
+      row = houselist[col].row; // man.gamestate.row;
+      targetrow = row-1;
+      houselist[col].height++;
+      _.each(houselist[col].tiles, function(tile) {
         tile.y = positionY(targetrow);
         targetrow--;
       });
       floor = floors.create(positionX(col), positionY(row), "floor");
       floor.scale.setTo(0.25, 0.25);
       floor.anchor.setTo(0, 1);
-      houselist[col]["tiles"].unshift(floor); // insert floor at the beginning to grow the house
+      houselist[col].tiles.unshift(floor); // insert floor at the beginning to grow the house
       checkWin(man, col);
     } else { // build a new house
+      row = man.gamestate.row;
       floor = floors.create(positionX(col), positionY(row), "roof");
       floor.scale.setTo(0.25, 0.25);
       floor.anchor.setTo(0, 1);
@@ -125,17 +126,22 @@ function create() {
   worm.body.collideWorldBounds = true;
   worm.gamestate = { col: col, row: row, hasItem: false };
 
+  holes = game.add.group();
+  holes.enableBody = true;
+  floors = game.add.group();
+  floors.enableBody = true;
+
   game.input.keyboard.onUpCallback = keyInput;
   game.sound.setDecodedCallback(_.values(sound), start, this); // start the game when sounds are decoded
 }
 
-function createBlocks(n) {
-  var block, i;
+function createBlocks(nthDday) {
+  var block, i, numBlocks = function(n) { return (n >= 7 ? 9: [3, 5, 7, 7, 7, 9][n-1]); };
 
   if (blocks) blocks.destroy(); // new group for each day / night
   blocks = game.add.group();
   blocks.enableBody = true;
-  for (i = 0; i < n; i++) {
+  for (i = 0; i < numBlocks(nthDday); i++) {
     block = blocks.create(positionX(Math.floor(columns * Math.random())), positionY(borderrow - 1), "block");
     block.scale.setTo(0.25, 0.25);
     block.anchor.setTo(0, 1);
@@ -144,35 +150,37 @@ function createBlocks(n) {
   }
 }
 
-function createFoods(n) { // "Foods" consistency over spelling
-  var food, i;
+function createFoods(nthDday) { // "Foods" consistency over spelling
+  var food, i, numFoods = function(n) { return (n >= 7 ? 9: [3, 5, 7, 7, 7, 9][n-1]); };
 
   if (foods) foods.destroy(); // new group for each day / night
   foods = game.add.group();
   foods.enableBody = true;
-  for (i = 0; i < n; i++) {
+  for (i = 0; i < numFoods(nthDday); i++) {
     food = foods.create(positionX(Math.floor(columns * Math.random())), positionY(borderrow + 1 + Math.floor(Math.random() * (rows - borderrow))), "food");
     food.scale.setTo(0.25, 0.25);
     food.anchor.setTo(0, 1);
   }
 }
 
-function day(n) {
-  sun.visible = true;
-  moon.visible = false;
-  dayLayer.visible = true;
-  nightLayer.visible = false;
-  sun.gamestate.col = sun.gamestate.startCol;
-  sun.x = positionX(sun.gamestate.col);
-  game.time.events.repeat(lengthDayNight/sun.gamestate.steps * 1000, sun.gamestate.steps - 1, function() {
-    sun.gamestate.col++;
-    sun.x = positionX(sun.gamestate.col);
+function dayNight(n, isday) {
+  var activeSound = (isday ? sound.day : sound.night), inactiveSound = (isday ? sound.night : sound.day), visible = (isday ? sun : moon), visibleLayer = (isday ? dayLayer : nightLayer), invisible = (isday ? moon : sun), invisibleLayer = (isday ? nightLayer : dayLayer);
+
+  visible.visible = true;
+  invisible.visible = false;
+  visibleLayer.visible = true;
+  invisibleLayer.visible = false;
+  visible.gamestate.col = visible.gamestate.startCol;
+  visible.x = positionX(visible.gamestate.col);
+  game.time.events.repeat(lengthDayNight/visible.gamestate.steps * 1000, visible.gamestate.steps - 1, function() {
+    visible.gamestate.col++;
+    visible.x = positionX(visible.gamestate.col);
   }, this);
-  createBlocks(numBlocks);
-  createFoods(numFoods);
-  if (sound.night.isPlaying) sound.night.stop();
-  playMusic(sound.day);
-  game.time.events.add(lengthDayNight * 1000, night, this, n);
+  createBlocks(n);
+  createFoods(n);
+  if (inactiveSound.isPlaying) inactiveSound.stop();
+  playMusic(activeSound);
+  game.time.events.add(lengthDayNight * 1000, dayNight, this, (isday ? n : ++n), !isday);
 }
 
 function digHole() {
@@ -228,25 +236,6 @@ function keyInput(event) {
     digHole();
   }
   // other
-}
-
-function night(n) {
-  sun.visible = false;
-  moon.visible = true;
-  nightLayer.visible = true;
-  dayLayer.visible = false;
-  moon.gamestate.col = moon.gamestate.startCol;
-  moon.x = positionX(moon.gamestate.col);
-  game.time.events.repeat(lengthDayNight/moon.gamestate.steps * 1000, moon.gamestate.steps - 1, function() {
-    moon.gamestate.col++;
-    moon.x = positionX(moon.gamestate.col);
-  }, this);
-  createBlocks(numBlocks);
-  createFoods(numFoods);
-  if (sound.day.isPlaying) sound.day.stop();
-  playMusic(sound.night);
-  n++;
-  game.time.events.add(lengthDayNight * 1000, day, this, n);
 }
 
 function playMusic(music) {
@@ -310,7 +299,7 @@ function render() {
 }
 
 function start() {
-  day(1);
+  dayNight(1, true);
 }
 
 function update() {
