@@ -289,15 +289,15 @@ function preload() {
   game.load.image("sun", "assets/sprites/sky_sun.png");
   game.load.image("worm", "assets/sprites/worm01.png");
 
-  game.load.audio("buildblock", ["/assets/snd/ManVsWorm-Manbuildup.ogg", "/assets/snd/ManVsWorm-Manbuildup.mp3"]);
-  game.load.audio("day", ["/assets/snd/ManVsWorm-Day_30sec_128bpm.ogg", "/assets/snd/ManVsWorm-Day_30sec_128bpm.mp3"]);
-  game.load.audio("dighole", ["/assets/snd/ManVsWorm-Wormdiggahole.ogg", "/assets/snd/ManVsWorm-Wormdiggahole.mp3"]);
-  game.load.audio("manwins", ["/assets/snd/ManVsWorm-Manwin.ogg", "/assets/snd/ManVsWorm-Manwin.mp3"]);
-  game.load.audio("movedown", ["/assets/snd/ManVsWorm-Housefallsdown.ogg", "/assets/snd/ManVsWorm-Housefallsdown.mp3"]);
+  game.load.audio("buildblock", ["assets/snd/ManVsWorm-Manbuildup.ogg", "assets/snd/ManVsWorm-Manbuildup.mp3"]);
+  game.load.audio("day", ["assets/snd/ManVsWorm-Day_30sec_128bpm.ogg", "assets/snd/ManVsWorm-Day_30sec_128bpm.mp3"]);
+  game.load.audio("dighole", ["assets/snd/ManVsWorm-Wormdiggahole.ogg", "assets/snd/ManVsWorm-Wormdiggahole.mp3"]);
+  game.load.audio("manwins", ["assets/snd/ManVsWorm-Manwin.ogg", "assets/snd/ManVsWorm-Manwin.mp3"]);
+  game.load.audio("movedown", ["assets/snd/ManVsWorm-Housefallsdown.ogg", "assets/snd/ManVsWorm-Housefallsdown.mp3"]);
   game.load.audio("night", ["assets/snd/ManVsWorm-Night_30sec_128bpm.ogg", "assets/snd/ManVsWorm-Night_30sec_128bpm.mp3"]);
-  game.load.audio("pickupblock", ["/assets/snd/ManVsWorm-Manpickup.ogg", "/assets/snd/ManVsWorm-Manpickup.mp3"]);
-  game.load.audio("pickupfood", ["/assets/snd/ManVsWorm-WormswallowsFood.ogg", "/assets/snd/ManVsWorm-WormswallowsFood.mp3"]);
-  game.load.audio("wormwins", ["/assets/snd/ManVsWorm-Wormwin.ogg", "/assets/snd/ManVsWorm-Wormwin.mp3"]);
+  game.load.audio("pickupblock", ["assets/snd/ManVsWorm-Manpickup.ogg", "assets/snd/ManVsWorm-Manpickup.mp3"]);
+  game.load.audio("pickupfood", ["assets/snd/ManVsWorm-WormswallowsFood.ogg", "assets/snd/ManVsWorm-WormswallowsFood.mp3"]);
+  game.load.audio("wormwins", ["assets/snd/ManVsWorm-Wormwin.ogg", "assets/snd/ManVsWorm-Wormwin.mp3"]);
 }
 
 function render() {
