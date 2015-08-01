@@ -4,8 +4,8 @@ Work in Progress
 
 Berlin Minijam July 2015
 
-0.1 Berlin Minijam version
-0.2 Rewrite with Phaser.io
+0.1 Berlin Minijam version  
+0.2 Rewrite with Phaser.io  
 
 ### Made by:
 Code/Gamedesign: Michael Straeubig  
