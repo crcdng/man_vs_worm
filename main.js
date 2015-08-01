@@ -277,17 +277,17 @@ function positionY(row) {
 
 function preload() {
 
-  game.load.tilemap("map", "/assets/tilemap.json", null, Phaser.Tilemap.TILED_JSON);
-  game.load.image("block", "/assets/sprites/house_block copy.png");
-  game.load.image("floor", "/assets/sprites/house.png");
-  game.load.image("food", "/assets/sprites/ground_flower.png");
-  game.load.image("ground", "/assets/spritesheets/tiles_vierteln_0.png");
-  game.load.image("hole", "/assets/sprites/ground_hole.png");
-  game.load.image("man", "/assets/sprites/hero01.png");
-  game.load.image("moon", "/assets/sprites/sky_dark_moon.png");
-  game.load.image("roof", "/assets/sprites/house_roof.png");
-  game.load.image("sun", "/assets/sprites/sky_sun.png");
-  game.load.image("worm", "/assets/sprites/worm01.png");
+  game.load.tilemap("map", "assets/tilemap.json", null, Phaser.Tilemap.TILED_JSON);
+  game.load.image("block", "assets/sprites/house_block copy.png");
+  game.load.image("floor", "assets/sprites/house.png");
+  game.load.image("food", "assets/sprites/ground_flower.png");
+  game.load.image("ground", "assets/spritesheets/tiles_vierteln_0.png");
+  game.load.image("hole", "assets/sprites/ground_hole.png");
+  game.load.image("man", "assets/sprites/hero01.png");
+  game.load.image("moon", "assets/sprites/sky_dark_moon.png");
+  game.load.image("roof", "assets/sprites/house_roof.png");
+  game.load.image("sun", "assets/sprites/sky_sun.png");
+  game.load.image("worm", "assets/sprites/worm01.png");
 
   game.load.audio("buildblock", ["/assets/snd/ManVsWorm-Manbuildup.ogg", "/assets/snd/ManVsWorm-Manbuildup.mp3"]);
   game.load.audio("day", ["/assets/snd/ManVsWorm-Day_30sec_128bpm.ogg", "/assets/snd/ManVsWorm-Day_30sec_128bpm.mp3"]);
