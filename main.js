@@ -17,7 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 
 var game = new Phaser.Game(1024, 644, Phaser.AUTO, "", { preload: preload, init: init, create: create, update: update, render: render });
 
-var blocks, borderrow = 8, columns = 16, dayLayer, floors, foods, groundLayer, holelist = [], holes, houselist = [], lengthDayNight = 10, man, map, moon, nightLayer, settings = {music: true, sound: true, debug: false}, sun, rows = 14, winner = null, worm, sound = {};
+var blocks, borderrow = 8, columns = 16, dayLayer, floors, foods, groundLayer, holelist = [], holes, houselist = [], lengthDayNight = 10, man, map, moon, nightLayer, settings = {music: false, sound: true, debug: false}, sun, rows = 14, winner = null, worm, sound = {};
 
 function addFloor() {
   var col, floor, row, targetrow;
@@ -26,13 +26,13 @@ function addFloor() {
     man.gamestate.hasItem = false;
     col = man.gamestate.col;
     playSound(sound.buildblock);
-    if ( houselist[col] ) { // house exists at player column
+    if (houselist[col]) { // house exists at player column
       row = houselist[col].row; // man.gamestate.row;
-      targetrow = row-1;
-      houselist[col].height++;
+      targetrow = row - 1;
+      houselist[col].height += 1;
       _.each(houselist[col].tiles, function(tile) {
         tile.y = positionY(targetrow);
-        targetrow--;
+        targetrow -= 1;
       });
       floor = floors.create(positionX(col), positionY(row), "floor");
       floor.scale.setTo(0.25, 0.25);
@@ -98,7 +98,7 @@ function create() {
   game.physics.startSystem(Phaser.Physics.ARCADE);
 
   map = game.add.tilemap("map");
-  map.addTilesetImage("tiles_vierteln_0","ground");
+  map.addTilesetImage("tiles_vierteln_0", "ground");
   groundLayer = map.createLayer("ground");
   groundLayer.resizeWorld();
   nightLayer = map.createLayer("night");
@@ -178,24 +178,42 @@ function createFoods(nthDday) { // "Foods" consistency over spelling
   }
 }
 
-function dayNight(n, isday) {
-  var activeSound = (isday ? sound.day : sound.night), inactiveSound = (isday ? sound.night : sound.day), visible = (isday ? sun : moon), visibleLayer = (isday ? dayLayer : nightLayer), invisible = (isday ? moon : sun), invisibleLayer = (isday ? nightLayer : dayLayer);
+function dayNight(n, isDay) {
+  var activeMusic, inactiveMusic, invisibleElement, invisibleLayer, visibleElement, visibleLayer;
 
-  visible.visible = true;
-  invisible.visible = false;
+  if (isDay) {
+    visibleElement = sun;
+    invisibleElement = moon;
+    visibleLayer = dayLayer;
+    invisibleLayer = nightLayer;
+    activeMusic = sound.day;
+    inactiveMusic = sound.night;
+    worm.gamestate.kill = false;
+  } else { // night
+    visibleElement = moon;
+    invisibleElement = sun;
+    visibleLayer = nightLayer;
+    invisibleLayer = dayLayer;
+    activeMusic = sound.night;
+    inactiveMusic = sound.day;
+    worm.gamestate.kill = true;
+  }
+
+  visibleElement.visible = true;
+  invisibleElement.visible = false;
   visibleLayer.visible = true;
   invisibleLayer.visible = false;
-  visible.gamestate.col = visible.gamestate.startCol;
-  visible.x = positionX(visible.gamestate.col);
-  game.time.events.repeat(lengthDayNight/visible.gamestate.steps * 1000, visible.gamestate.steps - 1, function() {
-    visible.gamestate.col++;
-    visible.x = positionX(visible.gamestate.col);
+  visibleElement.gamestate.col = visibleElement.gamestate.startCol;
+  visibleElement.x = positionX(visibleElement.gamestate.col);
+  game.time.events.repeat(lengthDayNight/visibleElement.gamestate.steps * 1000, visibleElement.gamestate.steps - 1, function() {
+    visibleElement.gamestate.col++;
+    visibleElement.x = positionX(visibleElement.gamestate.col);
   }, this);
   createBlocks(n);
   createFoods(n);
-  if (inactiveSound.isPlaying) inactiveSound.stop();
-  playMusic(activeSound);
-  game.time.events.add(lengthDayNight * 1000, dayNight, this, (isday ? n : ++n), !isday);
+  if (inactiveMusic.isPlaying) inactiveMusic.stop();
+  playMusic(activeMusic);
+  game.time.events.add(lengthDayNight * 1000, dayNight, this, (isDay ? n : ++n), !isDay);
 }
 
 function digHole() {
@@ -231,26 +249,30 @@ function keyInput(event) {
   var key = event.keyCode;
 
   // man
-  if (key === Phaser.Keyboard.A) {
+  if (key === Phaser.Keyboard.A) { // move left
     man.gamestate.col = man.gamestate.col - 1;
     if (man.gamestate.col < 0) man.gamestate.col = columns - 1;
     man.x = positionX(man.gamestate.col);
-  } else if (key === Phaser.Keyboard.D) {
+  } else if (key === Phaser.Keyboard.D) { // move right
     man.gamestate.col = (man.gamestate.col + 1) % columns;
     man.x = positionX(man.gamestate.col);
-  } else if (key === Phaser.Keyboard.E) {
+  } else if (key === Phaser.Keyboard.W) { // jump
+    man.body.velocity.y = -150;
+    // man.gamestate.col = (man.gamestate.col + 1) % columns;
+    // man.x = positionX(man.gamestate.col);
+  } else if (key === Phaser.Keyboard.E) { // build
     addFloor();
   // worm
-  } else if (key === Phaser.Keyboard.J) {
+  } else if (key === Phaser.Keyboard.J) { // move left
     worm.gamestate.col = Math.max(worm.gamestate.col - 1, 0);
     worm.x = positionX(worm.gamestate.col);
-  } else if (key === Phaser.Keyboard.L) {
+  } else if (key === Phaser.Keyboard.L) { // move right
     worm.gamestate.col = Math.min(worm.gamestate.col + 1, columns - 1);
     worm.x = positionX(worm.gamestate.col);
-  } else if (key === Phaser.Keyboard.I) {
+  } else if (key === Phaser.Keyboard.I) { // move up
     worm.gamestate.row = Math.max((worm.gamestate.row - 1), borderrow);
     worm.y = positionY(worm.gamestate.row);
-  } else if (key === Phaser.Keyboard.K) {
+  } else if (key === Phaser.Keyboard.K) { // move down
     worm.gamestate.row = Math.min(worm.gamestate.row + 1, rows);
     worm.y = positionY(worm.gamestate.row);
   } else if (key === Phaser.Keyboard.U) {
@@ -329,6 +351,7 @@ function update() {
   game.physics.arcade.collide(blocks, groundLayer);
   game.physics.arcade.overlap(man, blocks, collectBlock, null, this);
   game.physics.arcade.overlap(worm, foods, collectFood, null, this);
+  game.physics.arcade.overlap(man, worm, wormHitsMan, null, this);
 }
 
 function updateHouse(col) {
@@ -343,5 +366,13 @@ function updateHouse(col) {
       targetrow--;
     });
     checkWin(worm, col);
+  }
+}
+
+function wormHitsMan() {
+  if (worm.gamestate.kill) {
+    if (winner !== null) return; // we have a winner already
+    winner = worm;
+    console.log("Worm wins!");
   }
 }
