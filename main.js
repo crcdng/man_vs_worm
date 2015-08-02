@@ -17,7 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 
 var game = new Phaser.Game(1024, 644, Phaser.AUTO, "", { preload: preload, init: init, create: create, update: update, render: render });
 
-var blocks, borderrow = 8, columns = 16, dayLayer, floors, foods, groundLayer, holelist = [], holes, houselist = [], lengthDayNight = 10, man, map, moon, nightLayer, settings = {music: false, sound: true, debug: false}, rows = 14, sound = {}, sun, theDroppedBlock, winner = null, worm;
+var blocks, borderrow = 8, columns = 16, dayLayer, floors, foods, groundLayer, holelist = [], holes, houselist = [], lengthDayNight = 10, man, map, moon, nightLayer, settings = {music: true, sound: true, debug: false}, rows = 14, sound = {}, sun, theDroppedBlock, winner = null, worm;
 
 function addFloor() {
   var col, floor, row, targetrow;
@@ -118,7 +118,12 @@ function create() {
   game.physics.arcade.enable(sun);
   sun.scale.setTo(0.25, 0.25);
   sun.anchor.setTo(0, 1);
-  sun.gamestate = { col: col, row: row, startCol: col, steps: 10 };
+  sun.gamestate = {
+    col: col,
+    row: row,
+    startCol: col,
+    steps: 10
+  };
 
   col = 3;
   row = 2;
@@ -126,7 +131,12 @@ function create() {
   game.physics.arcade.enable(moon);
   moon.scale.setTo(0.25, 0.25);
   moon.anchor.setTo(0, 1);
-  moon.gamestate = { col: col, row: row, startCol: col, steps: 10 };
+  moon.gamestate = {
+    col: col,
+    row: row,
+    startCol: col,
+    steps: 10
+  };
 
   col = 4;
   row = 7;
@@ -186,7 +196,7 @@ function createFoods(nthDday) { // "Foods" consistency over spelling
 }
 
 function dayNight(n, isDay) {
-  var activeMusic, inactiveMusic, invisibleElement, invisibleLayer, visibleElement, visibleLayer;
+  var activeMusic, inactiveMusic, invisibleElement, invisibleLayer, stepTime, tween, visibleElement, visibleLayer;
 
   if (isDay) {
     visibleElement = sun;
@@ -213,16 +223,25 @@ function dayNight(n, isDay) {
   visibleLayer.visible = true;
   invisibleLayer.visible = false;
   visibleElement.gamestate.col = visibleElement.gamestate.startCol;
+
+  visibleElement.alpha = 0;
   visibleElement.x = positionX(visibleElement.gamestate.col);
-  game.time.events.repeat(lengthDayNight/visibleElement.gamestate.steps * 1000, visibleElement.gamestate.steps - 1, function() {
-    visibleElement.gamestate.col += 1;
-    visibleElement.x = positionX(visibleElement.gamestate.col);
-  }, this);
+//‚  visibleElement.gamestate.appear();
+
+  stepTime = (lengthDayNight/visibleElement.gamestate.steps) * 1000;
+  n = 0
+
+  tween = game.add.tween(visibleElement);
+  tween.to({ alpha: 1 }, 1000, "Sine.easeInOut");
+  for (n = 0; n < visibleElement.gamestate.steps; n = n + 1) tween.to({ x: positionX(++visibleElement.gamestate.col) }, stepTime, "Circ.easeInOut");
+  tween.to({ alpha: 0 }, 1000, "Sine.easeInOut");
+  tween.start();
+
   createBlocks(n);
   createFoods(n);
   if (inactiveMusic.isPlaying) inactiveMusic.stop();
   playMusic(activeMusic);
-  game.time.events.add(lengthDayNight * 1000, dayNight, this, (isDay ? n : ++n), !isDay);
+  game.time.events.add(lengthDayNight * 1000 + 2000, dayNight, this, (isDay ? n : ++n), !isDay);
 }
 
 function digHole() {
@@ -325,7 +344,6 @@ function positionY(row) {
 }
 
 function preload() {
-
   game.load.tilemap("map", "assets/tilemap.json", null, Phaser.Tilemap.TILED_JSON);
   game.load.image("block", "assets/sprites/house_block copy.png");
   game.load.image("floor", "assets/sprites/house.png");
@@ -337,7 +355,6 @@ function preload() {
   game.load.image("roof", "assets/sprites/house_roof.png");
   game.load.image("sun", "assets/sprites/sky_sun.png");
   game.load.image("worm", "assets/sprites/worm01.png");
-
   game.load.audio("buildblock", ["assets/snd/ManVsWorm-Manbuildup.ogg", "assets/snd/ManVsWorm-Manbuildup.mp3"]);
   game.load.audio("day", ["assets/snd/ManVsWorm-Day_30sec_128bpm.ogg", "assets/snd/ManVsWorm-Day_30sec_128bpm.mp3"]);
   game.load.audio("dighole", ["assets/snd/ManVsWorm-Wormdiggahole.ogg", "assets/snd/ManVsWorm-Wormdiggahole.mp3"]);
