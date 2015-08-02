@@ -17,7 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 
 var game = new Phaser.Game(1024, 644, Phaser.AUTO, "", { preload: preload, init: init, create: create, update: update, render: render });
 
-var blocks, borderrow = 8, columns = 16, dayLayer, floors, foods, groundLayer, holelist = [], holes, houselist = [], lengthDayNight = 10, man, map, moon, nightLayer, settings = {music: true, sound: true, debug: false}, rows = 14, sound = {}, sun, theDroppedBlock, winner = null, worm;
+var blocks, borderrow = 8, columns = 16, dayLayer, floors, foods, groundLayer, holelist = [], holes, houselist = [], lengthDayNight = 10, man, map, moon, nightLayer, settings = {music: false, sound: true, debug: false}, rows = 14, sound = {}, sun, theDroppedBlock, winner = null, worm;
 
 function addFloor() {
   var col, floor, row, targetrow;
@@ -31,7 +31,7 @@ function addFloor() {
       targetrow = row - 1;
       houselist[col].height += 1;
       _.each(houselist[col].tiles, function(tile) {
-        tile.y = positionY(targetrow);
+        game.add.tween(tile).to({ y: positionY(targetrow) }, 1000, "Bounce.easeOut", true);
         targetrow -= 1;
       });
       floor = floors.create(positionX(col), positionY(row), "floor");
@@ -41,7 +41,8 @@ function addFloor() {
       checkWin(man, col);
     } else { // build a new house
       row = man.gamestate.row;
-      floor = floors.create(positionX(col), positionY(row), "roof");
+      floor = floors.create(positionX(col), positionY(row+1), "roof");
+      game.add.tween(floor).to({ y: positionY(row) }, 1000, "Bounce.easeOut", true);
       floor.scale.setTo(0.25, 0.25);
       floor.anchor.setTo(0, 1);
       houselist[col] = { height: 1, row: row, tiles: [floor] }; // row: foot of the house
@@ -53,6 +54,8 @@ function addFloor() {
 
 function blockHitsWorm() {
   theDroppedBlock.kill();
+  // TODO play sound
+  game.add.tween(worm).to({ y: "-30" }, 100, "Sine.easeOut", true, 0, 0, true);
   if (winner !== null) return; // we have a winner already
   winner = man;
   console.log("Man wins!");
@@ -73,10 +76,24 @@ function checkWin(potentialWinner, col) {
   }
 }
 
+function collapseHouse(col) {
+  var targetrow;
+
+  playSound(sound.movedown);
+  houselist[col]["row"]++;
+  targetrow = houselist[col]["row"];
+  _.each(houselist[col]["tiles"], function(tile) {
+    game.add.tween(tile).to({ y: positionY(targetrow) }, 1000, "Bounce.easeOut", true);
+    targetrow--;
+  });
+  checkWin(worm, col);
+}
+
 function collectBlock(player, block) {
   if (!player.gamestate.hasItem) {
     player.gamestate.hasItem = true;
     playSound(sound.pickupblock);
+    game.add.tween(player.scale).to({ x: "+0.15", y: "+0.15",}, 100, "Sine.easeInOut", true, 0, 0, true);
     block.kill();
   }
 }
@@ -112,56 +129,57 @@ function create() {
   dayLayer = map.createLayer("day");
   map.setCollision(4, true, "ground");
 
-  col = 3;
-  row = 2;
-  sun = game.add.sprite(positionX(col), positionY(row), "sun");
-  game.physics.arcade.enable(sun);
-  sun.scale.setTo(0.25, 0.25);
-  sun.anchor.setTo(0, 1);
-  sun.gamestate = {
-    col: col,
-    row: row,
-    startCol: col,
+  var gamestate = {
+    col: 3,
+    row: 2,
+    startCol: 3,
     steps: 10
   };
 
-  col = 3;
-  row = 2;
-  moon = game.add.sprite(positionX(col), positionY(row), "moon");
+  sun = game.add.sprite(positionX(3), positionY(2), "sun");
+  game.physics.arcade.enable(sun);
+  sun.scale.setTo(0.25, 0.25);
+  sun.anchor.setTo(0, 1);
+  sun.gamestate = _.extend({}, gamestate);
+
+  moon = game.add.sprite(positionX(3), positionY(2), "moon");
   game.physics.arcade.enable(moon);
   moon.scale.setTo(0.25, 0.25);
   moon.anchor.setTo(0, 1);
-  moon.gamestate = {
-    col: col,
-    row: row,
-    startCol: col,
-    steps: 10
-  };
+  moon.gamestate = _.extend({}, gamestate);
+
+  holes = game.add.group();
+  holes.enableBody = true;
+  floors = game.add.group();
+  floors.enableBody = true;
+  foods = game.add.group();
+  blocks = game.add.group();
 
   col = 4;
   row = 7;
   man = game.add.sprite(positionX(col), positionY(row), "man");
   game.physics.arcade.enable(man);
-  man.scale.setTo(0.25, 0.25);
+  man.alpha = 0;
+  man.scale.setTo(0.1, 0.1);
   man.anchor.setTo(0, 1);
   man.body.bounce.y = 0.2;
   man.body.gravity.y = 300;
   man.body.collideWorldBounds = true;
+  game.add.tween(man).to({ alpha: 1 }, 1000, "Sine.easeInOut", true);
+  game.add.tween(man.scale).to({ x: 0.25, y: 0.25 }, 1000, "Bounce.easeInOut", true);
   man.gamestate = { col: col, row: row, hasItem: false };
 
   col = 11;
   row = 11;
   worm = game.add.sprite(positionX(col), positionY(row), "worm");
   game.physics.arcade.enable(worm);
-  worm.scale.setTo(0.25, 0.25);
+  worm.scale.setTo(0.1, 0.1);
   worm.anchor.setTo(0, 1);
   worm.body.collideWorldBounds = true;
+  worm.alpha = 0;
+  game.add.tween(worm).to({ alpha: 1 }, 1000, "Sine.easeInOut", true);
+  game.add.tween(worm.scale).to({ x: 0.25, y: 0.25 }, 1000, "Bounce.easeInOut", true);
   worm.gamestate = { col: col, row: row, hasItem: false };
-
-  holes = game.add.group();
-  holes.enableBody = true;
-  floors = game.add.group();
-  floors.enableBody = true;
 
   game.input.keyboard.onUpCallback = keyInput;
   game.sound.setDecodedCallback(_.values(sound), start, this); // start the game when sounds are decoded
@@ -170,33 +188,36 @@ function create() {
 function createBlocks(nthDday) {
   var block, i, numBlocks = function(n) { return (n >= 7 ? 9: [3, 5, 7, 7, 7, 9][n-1]); };
 
-  if (blocks) blocks.destroy(); // new group for each day / night
-  blocks = game.add.group();
+  if (blocks) blocks.removeAll(true); // new group for each day / night
   blocks.enableBody = true;
   for (i = 0; i < numBlocks(nthDday); i++) {
-    block = blocks.create(positionX(Math.floor(columns * Math.random())), positionY(borderrow - 1), "block");
+    block = blocks.create(positionX(Math.floor(columns * Math.random())), positionY(borderrow - 2), "block");
     block.scale.setTo(0.25, 0.25);
     block.anchor.setTo(0, 1);
-    block.body.gravity.y = 6;
-    block.body.bounce.y = 0.2;
+    block.body.gravity.y = 600;
+    block.body.bounce.y = 0.4;
+    block.alpha = 0;
+    game.add.tween(block).to({ alpha: 1 }, 1000, "Sine.easeInOut", true);
   }
 }
 
 function createFoods(nthDday) { // "Foods" consistency over spelling
   var food, i, numFoods = function(n) { return (n >= 7 ? 9 : [3, 5, 7, 7, 7, 9][n-1]); };
 
-  if (foods) foods.destroy(); // new group for each day / night
-  foods = game.add.group();
+  if (foods) foods.removeAll(true); // new group for each day / night
   foods.enableBody = true;
   for (i = 0; i < numFoods(nthDday); i = i + 1) {
     food = foods.create(positionX(Math.floor(columns * Math.random())), positionY(borderrow + 1 + Math.floor(Math.random() * (rows - borderrow))), "food");
     food.scale.setTo(0.25, 0.25);
     food.anchor.setTo(0, 1);
+    food.alpha = 0;
+    game.add.tween(food).to({ alpha: 1 }, 1500, "Sine.easeInOut", true);
+
   }
 }
 
 function dayNight(n, isDay) {
-  var activeMusic, inactiveMusic, invisibleElement, invisibleLayer, stepTime, tween, visibleElement, visibleLayer;
+  var activeMusic, inactiveMusic, invisibleElement, invisibleLayer, n, stepTime, tween, visibleElement, visibleLayer;
 
   if (isDay) {
     visibleElement = sun;
@@ -221,16 +242,14 @@ function dayNight(n, isDay) {
   visibleElement.visible = true;
   invisibleElement.visible = false;
   visibleLayer.visible = true;
+  visibleLayer.alpha = 0;
+  game.add.tween(visibleLayer).to({ alpha: 1 }, 2500, "Sine.easeInOut", true);
   invisibleLayer.visible = false;
   visibleElement.gamestate.col = visibleElement.gamestate.startCol;
 
   visibleElement.alpha = 0;
   visibleElement.x = positionX(visibleElement.gamestate.col);
-//‚  visibleElement.gamestate.appear();
-
   stepTime = (lengthDayNight/visibleElement.gamestate.steps) * 1000;
-  n = 0
-
   tween = game.add.tween(visibleElement);
   tween.to({ alpha: 1 }, 1000, "Sine.easeInOut");
   for (n = 0; n < visibleElement.gamestate.steps; n = n + 1) tween.to({ x: positionX(++visibleElement.gamestate.col) }, stepTime, "Circ.easeInOut");
@@ -255,13 +274,15 @@ function digHole() {
     hole = holes.create(positionX(col), positionY(row), "hole");
     hole.scale.setTo(0.25, 0.25);
     hole.anchor.setTo(0, 1);
+    hole.alpha = 0;
+    game.add.tween(hole).to({ alpha: 1 }, 1000, "Sine.easeInOut", true);
     if ( holelist[col] ) { // holes already exist in this column
       holelist[col]["amount"]++;
       holelist[col]["tiles"].push(hole);
     } else { // first hole in this column
       holelist[col] = { amount: 1, tiles: [hole] };
     }
-    updateHouse(col);
+    if (houselist[col]) collapseHouse(col);
   } else {
     // play sound unsuccessful
   }
@@ -395,28 +416,15 @@ function update() {
   game.physics.arcade.collide(blocks, groundLayer);
   game.physics.arcade.overlap(man, blocks, collectBlock, null, this);
   game.physics.arcade.overlap(worm, foods, collectFood, null, this);
-  game.physics.arcade.overlap(man, worm, wormHitsMan, null, this);
+  game.physics.arcade.overlap(man, worm, wormBitesMan, null, this);
   game.physics.arcade.overlap(theDroppedBlock, worm, blockHitsWorm, null, this);
 }
 
-function updateHouse(col) {
-  var targetrow;
-
-  if (houselist[col]) {
-    playSound(sound.movedown);
-    houselist[col]["row"]++;
-    targetrow = houselist[col]["row"];
-    _.each(houselist[col]["tiles"], function(tile) {
-      tile.y = positionY(targetrow);
-      targetrow--;
-    });
-    checkWin(worm, col);
-  }
-}
-
-function wormHitsMan() {
+function wormBitesMan() {
   if (worm.gamestate.cankill) {
     if (winner !== null) return; // we have a winner already
+    // TODO play sound
+    game.add.tween(man).to({ y: "-30" }, 100, "Elastic.easeInOut", true, 0, 0, true);
     winner = worm;
     console.log("Worm wins!");
   }
