@@ -17,7 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 
 var game = new Phaser.Game(1024, 644, Phaser.AUTO, "", { preload: preload, init: init, create: create, update: update, render: render });
 
-var blocks, borderrow = 8, columns = 16, dayLayer, floors, foods, groundLayer, holelist = [], holes, houselist = [], lengthDayNight = 10, man, map, moon, nightLayer, settings = {music: false, sound: true, debug: false}, rows = 14, sound = {}, sun, theDroppedBlock, winner = null, worm;
+var blocks, borderrow = 8, columns = 16, dayLayer, floors, foods, groundLayer, holelist = [], holes, houselist = [], lengthDayNight = 10, man, map, moon, nightLayer, settings = {music: false, sound: true, debug: true}, rows = 14, sound = {}, sun, theDroppedBlock, winner = null, worm;
 
 function addFloor() {
   var col, floor, row, targetrow;
@@ -175,6 +175,7 @@ function create() {
   game.physics.arcade.enable(worm);
   worm.scale.setTo(0.1, 0.1);
   worm.anchor.setTo(0, 1);
+  worm.body.setSize(256, 256, 0, 0); // must hit the man but not the plant a row above
   worm.body.collideWorldBounds = true;
   worm.alpha = 0;
   game.add.tween(worm).to({ alpha: 1 }, 1000, "Sine.easeInOut", true);
@@ -205,10 +206,11 @@ function createFoods(nthDday) { // "Foods" consistency over spelling
   var food, i, numFoods = function(n) { return (n >= 7 ? 9 : [3, 5, 7, 7, 7, 9][n-1]); };
 
   if (foods) foods.removeAll(true); // new group for each day / night
-  foods.enableBody = true;
+  foods.enableBody = true
   for (i = 0; i < numFoods(nthDday); i = i + 1) {
     food = foods.create(positionX(Math.floor(columns * Math.random())), positionY(borderrow + 1 + Math.floor(Math.random() * (rows - borderrow))), "food");
     food.scale.setTo(0.25, 0.25);
+    food.body.setSize(256, 90, 0, -25); // must hit the man but not the plant a row above
     food.anchor.setTo(0, 1);
     food.alpha = 0;
     game.add.tween(food).to({ alpha: 1 }, 1500, "Sine.easeInOut", true);
