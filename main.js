@@ -17,7 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 
 var game = new Phaser.Game(1024, 644, Phaser.AUTO, "", { preload: preload, init: init, create: create, update: update, render: render });
 
-var blocks, borderrow = 8, columns = 16, dayLayer, floors, foods, groundLayer, holelist = [], holes, houselist = [], lengthDayNight = 10, man, map, moon, nightLayer, settings = {music: false, sound: true, debug: true}, rows = 14, sound = {}, sun, theDroppedBlock, winner = null, worm;
+var blocks, borderrow = 8, columns = 16, dayLayer, floors, foods, groundLayer, holelist = [], holes, houselist = [], isDay, lengthDayNight = 10, man, map, moon, nightLayer, settings = {music: false, sound: true, debug: false}, rows = 14, sound = {}, sun, theDroppedBlock, winner = null, worm;
 
 function addFloor() {
   var col, floor, row, targetrow;
@@ -218,7 +218,7 @@ function createFoods(nthDday) { // "Foods" consistency over spelling
   }
 }
 
-function dayNight(n, isDay) {
+function dayNight(n) {
   var activeMusic, inactiveMusic, invisibleElement, invisibleLayer, n, stepTime, tween, visibleElement, visibleLayer;
 
   if (isDay) {
@@ -262,7 +262,7 @@ function dayNight(n, isDay) {
   createFoods(n);
   if (inactiveMusic.isPlaying) inactiveMusic.stop();
   playMusic(activeMusic);
-  game.time.events.add(lengthDayNight * 1000 + 2000, dayNight, this, (isDay ? n : ++n), !isDay);
+  game.time.events.add(lengthDayNight * 1000 + 2000, function() {isDay = !isDay; dayNight();}, this, (isDay ? n : ++n));
 }
 
 function digHole() {
@@ -346,8 +346,20 @@ function keyInput(event) {
     worm.y = positionY(worm.gamestate.row);
   } else if (key === Phaser.Keyboard.U) {
     digHole();
-  }
   // other
+  } else if (key === Phaser.Keyboard.G) {
+    var music = (isDay ? sound.day : sound.night);
+
+    settings.music = !settings.music;
+
+    if (settings.music) {
+      playMusic(music);
+    } else {
+      music.stop();
+    }
+  } else if (key === Phaser.Keyboard.V) {
+    settings.music = !settings.music;
+  }
 }
 
 function playMusic(music) {
@@ -409,7 +421,8 @@ function render() {
 }
 
 function start() {
-  dayNight(1, true);
+  isDay = true;
+  dayNight(1);
 }
 
 function update() {
