@@ -17,7 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 
 var game = new Phaser.Game(1024, 644, Phaser.AUTO, "", { preload: preload, init: init, create: create, update: update, render: render });
 
-var blocks, borderrow = 8, columns = 16, dayLayer, floors, foods, groundLayer, holelist = [], holes, houselist = [], isDay, lengthDayNight = 10, man, map, moon, nightLayer, settings = {music: false, sound: true, debug: false}, rows = 14, sound = {}, sun, theDroppedBlock, winner = null, worm;
+var blocks, borderrow = 8, columns = 16, dayLayer, floors, foods, groundLayer, holelist = [], holes, houselist = [], isDay, lengthDayNight = 10, man, map, moon, nightLayer, settings = {music: true, sound: true, debug: false}, rows = 14, sound = {}, sun, theDroppedBlock, winner = null, worm;
 
 function addFloor() {
   var col, floor, row, targetrow;
