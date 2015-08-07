@@ -15,11 +15,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 
 "use strict";
 
-var ManVsWorm = ManVsWorm || {};
+var ManVsWorm  = ManVsWorm || {};
 
-ManVsWorm.game = new Phaser.Game(1024, 644, Phaser.AUTO, "");
-ManVsWorm.game.state.add("Boot", ManVsWorm.Boot);
-ManVsWorm.game.state.add("Preload", ManVsWorm.Preload);
-// ManVsWorm.game.state.add("MainMenu", ManVsWorm.MainMenu);
-ManVsWorm.game.state.add("Game", ManVsWorm.Game);
-ManVsWorm.game.state.start("Boot");
+ManVsWorm.Boot = {
+  create: function() {
+    console.log("Boot.create()");
+    this.scale.scaleMode = Phaser.ScaleManager.NO_SCALE;
+    this.scale.pageAlignVertically = true;
+    this.scale.pageAlignHorizontally = true;
+    this.state.start("Preload");
+  },
+  preload: function() {
+    console.log("Boot.preload()");
+  }
+};
