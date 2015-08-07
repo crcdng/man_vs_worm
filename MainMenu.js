@@ -18,32 +18,45 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 var ManVsWorm  = ManVsWorm || {};
 
 ManVsWorm.MainMenu = {
+  music: null,
+
   create: function() {
     console.log("MainMenu.create()");
+
+    this.music = this.add.audio("title");
+    this.music.play();
 
     this.man = this.add.sprite(250, 280, "man");
     this.physics.arcade.enable(this.man);
     this.man.alpha = 0;
     this.man.scale.setTo(0.1, 0.1);
-    this.man.anchor.setTo(0, 1);
+    this.man.anchor.setTo(0.5, 0.5);
     this.add.tween(this.man).to({ alpha: 1 }, 3000, "Sine.easeInOut", true);
     this.add.tween(this.man.scale).to({ x: 0.5, y: 0.5 }, 3000, "Sine.easeInOut", true);
 
     this.worm = this.add.sprite(750, 280, "worm");
     this.physics.arcade.enable(this.worm);
     this.worm.scale.setTo(0.1, 0.1);
-    this.worm.anchor.setTo(0, 1);
+    this.worm.anchor.setTo(0.5, 0.5);
     this.worm.alpha = 0;
     this.add.tween(this.worm).to({ alpha: 1 }, 3000, "Sine.easeInOut", true);
     this.add.tween(this.worm.scale).to({ x: 0.5, y: 0.5 }, 3000, "Sine.easeInOut", true);
 
     this.input.keyboard.onUpCallback = _.bind(this.keyInput, this);
   },
+
   keyInput: function(event) {
     var key = event.keyCode;
-    this.state.start("Game");
+    this.startGame();
   },
+
   preload: function() {
     console.log("MainMenu.preload()");
+  },
+
+  startGame: function() {
+    this.music.stop();
+	 this.state.start("Game");
   }
+
 };
