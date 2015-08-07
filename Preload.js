@@ -24,11 +24,11 @@ ManVsWorm.Preload = {
   },
   preload: function() {
     console.log("Preload.preload()");
-    this.load.tilemap("map", "assets/tilemap.json", null, Phaser.Tilemap.TILED_JSON);
+    this.load.tilemap("map", "assets/spritesheets/tilemap.json", null, Phaser.Tilemap.TILED_JSON);
     this.load.image("block", "assets/sprites/house_block copy.png");
     this.load.image("floor", "assets/sprites/house.png");
     this.load.image("food", "assets/sprites/ground_flower.png");
-    this.load.image("ground", "assets/spritesheets/tiles_vierteln_0.png");
+    this.load.image("ground", "assets/spritesheets/tiles_quarter_0.png");
     this.load.image("hole", "assets/sprites/ground_hole.png");
     this.load.image("man", "assets/sprites/hero01.png");
     this.load.image("moon", "assets/sprites/sky_dark_moon.png");

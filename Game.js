@@ -140,7 +140,7 @@ ManVsWorm.Game = {
     this.physics.startSystem(Phaser.Physics.ARCADE);
 
     this.map = this.add.tilemap("map");
-    this.map.addTilesetImage("tiles_vierteln_0", "ground");
+    this.map.addTilesetImage("tiles_quarter_0", "ground");
     this.layers.groundLayer = this.map.createLayer("ground");
     this.layers.groundLayer.resizeWorld();
     this.layers.nightLayer = this.map.createLayer("night");
