@@ -38,27 +38,28 @@ ManVsWorm.Game = {
   worm: null,
 
   addFloor: function() {
-    var col, floor, row, targetrow;
+    var col, floor, house, row, targetrow;
 
-    if (this.man.gamestate.hasItem) {
-      this.man.gamestate.hasItem = false;
-      col = this.man.gamestate.col;
+    if (this.man.props.hasItem) {
+      this.man.props.hasItem = false;
+      col = this.man.props.col;
+      house = this.houselist[col];
       this.playSound(this.sounds.buildblock);
-      if (this.houselist[col]) { // house exists at player column
-        row = this.houselist[col].row; // this.man.gamestate.row;
+      if (house) { // house exists at player column
+        row = house.row; // this.man.props.row;
         targetrow = row - 1;
-        this.houselist[col].height += 1;
-        _.each(this.houselist[col].tiles, function(tile) {
+        house.height += 1;
+        _.each(house.tiles, function(tile) {
           this.add.tween(tile).to({ y: this.positionY(targetrow) }, 1000, "Bounce.easeOut", true);
           targetrow -= 1;
         }, this);
         floor = this.groups.floors.create(this.positionX(col), this.positionY(row), "floor");
         floor.scale.setTo(0.25, 0.25);
         floor.anchor.setTo(0, 1);
-        this.houselist[col].tiles.unshift(floor); // insert floor at the beginning to grow the house
-        if (this.houselist[col].row - this.houselist[col].height <= 0) this.score(this.man);
+        house.tiles.unshift(floor); // insert floor at the beginning to grow the house
+        if (house.row - house.height <= 0) this.score(this.man);
       } else { // build a new house
-        row = this.man.gamestate.row;
+        row = this.man.props.row;
         floor = this.groups.floors.create(this.positionX(col), this.positionY(row+1), "roof");
         this.add.tween(floor).to({ y: this.positionY(row) }, 1000, "Bounce.easeOut", true);
         floor.scale.setTo(0.25, 0.25);
@@ -79,21 +80,21 @@ ManVsWorm.Game = {
   },
 
   collapseHouse: function(col) {
-    var targetrow;
+    var house = this.houselist[col], targetrow;
 
     this.playSound(this.sounds.movedown);
-    this.houselist[col].row++;
-    targetrow = this.houselist[col].row;
-    _.each(this.houselist[col].tiles, function(tile) {
+    house.row += 1;
+    targetrow = house.row;
+    _.each(house.tiles, function(tile) {
       this.add.tween(tile).to({ y: this.positionY(targetrow) }, 1000, "Bounce.easeOut", true);
-      targetrow--;
+      targetrow -= 1;
     }, this);
-    if(this.houselist[col].row >= this.rows) this.score(this.worm);
+    if(house.row >= this.rows) this.score(this.worm);
   },
 
   collectBlock: function(player, block) {
-    if (!player.gamestate.hasItem) {
-      player.gamestate.hasItem = true;
+    if (!player.props.hasItem) {
+      player.props.hasItem = true;
       this.playSound(this.sounds.pickupblock);
       this.add.tween(player.scale).to({ x: "+0.15", y: "+0.15",}, 100, "Sine.easeInOut", true, 0, 0, true);
       block.kill();
@@ -101,8 +102,8 @@ ManVsWorm.Game = {
   },
 
   collectFood: function(player, food) {
-    if (!player.gamestate.hasItem) {
-      player.gamestate.hasItem = true;
+    if (!player.props.hasItem) {
+      player.props.hasItem = true;
       this.playSound(this.sounds.pickupfood);
       food.kill();
     }
@@ -131,7 +132,7 @@ ManVsWorm.Game = {
     this.layers.dayLayer = this.map.createLayer("day");
     this.map.setCollision(4, true, "ground");
 
-    var gamestate = {
+    var props = {
       col: 3,
       row: 2,
       startCol: 3,
@@ -142,13 +143,13 @@ ManVsWorm.Game = {
     this.physics.arcade.enable(this.sun);
     this.sun.scale.setTo(0.25, 0.25);
     this.sun.anchor.setTo(0, 1);
-    this.sun.gamestate = _.extend({}, gamestate);
+    this.sun.props = _.extend({}, props);
 
     this.moon = this.add.sprite(this.positionX(3), this.positionY(2), "moon");
     this.physics.arcade.enable(this.moon);
     this.moon.scale.setTo(0.25, 0.25);
     this.moon.anchor.setTo(0, 1);
-    this.moon.gamestate = _.extend({}, gamestate);
+    this.moon.props = _.extend({}, props);
 
     this.groups.holes = this.add.group();
     this.groups.holes.enableBody = true;
@@ -169,7 +170,7 @@ ManVsWorm.Game = {
     this.man.body.collideWorldBounds = true;
     this.add.tween(this.man).to({ alpha: 1 }, 1000, "Sine.easeInOut", true);
     this.add.tween(this.man.scale).to({ x: 0.25, y: 0.25 }, 1000, "Bounce.easeInOut", true);
-    this.man.gamestate = { col: col, hasItem: false, name: "man", row: row };
+    this.man.props = { col: col, hasItem: false, name: "man", row: row };
 
     col = 11;
     row = 11;
@@ -182,7 +183,7 @@ ManVsWorm.Game = {
     this.worm.alpha = 0;
     this.add.tween(this.worm).to({ alpha: 1 }, 1000, "Sine.easeInOut", true);
     this.add.tween(this.worm.scale).to({ x: 0.25, y: 0.25 }, 1000, "Bounce.easeInOut", true);
-    this.worm.gamestate = { col: col, hasItem: false, name: "worm", row: row };
+    this.worm.props = { col: col, hasItem: false, name: "worm", row: row };
 
     this.input.keyboard.onUpCallback = _.bind(this.keyInput, this);
     this.sound.setDecodedCallback(_.values(this.sounds), this.start, this); // start the game when sounds are decoded
@@ -230,8 +231,8 @@ ManVsWorm.Game = {
       invisibleLayer = this.layers.nightLayer;
       activeMusic = this.sounds.day;
       inactiveMusic = this.sounds.night;
-      this.worm.gamestate.cankill = false;
-      this.man.gamestate.candrop = true;
+      this.worm.props.cankill = false;
+      this.man.props.candrop = true;
     } else { // night
       visibleElement = this.moon;
       invisibleElement = this.sun;
@@ -239,8 +240,8 @@ ManVsWorm.Game = {
       invisibleLayer = this.layers.dayLayer;
       activeMusic = this.sounds.night;
       inactiveMusic = this.sounds.day;
-      this.worm.gamestate.cankill = true;
-      this.man.gamestate.candrop = false;
+      this.worm.props.cankill = true;
+      this.man.props.candrop = false;
     }
 
     visibleElement.visible = true;
@@ -249,14 +250,14 @@ ManVsWorm.Game = {
     visibleLayer.alpha = 0;
     this.add.tween(visibleLayer).to({ alpha: 1 }, 2500, "Sine.easeInOut", true);
     invisibleLayer.visible = false;
-    visibleElement.gamestate.col = visibleElement.gamestate.startCol;
+    visibleElement.props.col = visibleElement.props.startCol;
 
     visibleElement.alpha = 0;
-    visibleElement.x = this.positionX(visibleElement.gamestate.col);
-    stepTime = (this.lengthDayNight/visibleElement.gamestate.steps) * 1000;
+    visibleElement.x = this.positionX(visibleElement.props.col);
+    stepTime = (this.lengthDayNight/visibleElement.props.steps) * 1000;
     tween = this.add.tween(visibleElement);
     tween.to({ alpha: 1 }, 1000, "Sine.easeInOut");
-    for (n = 0; n < visibleElement.gamestate.steps; n = n + 1) tween.to({ x: this.positionX(++visibleElement.gamestate.col) }, stepTime, "Circ.easeInOut");
+    for (n = 0; n < visibleElement.props.steps; n = n + 1) tween.to({ x: this.positionX(++visibleElement.props.col) }, stepTime, "Circ.easeInOut");
     tween.to({ alpha: 0 }, 1000, "Sine.easeInOut");
     tween.start();
 
@@ -270,10 +271,10 @@ ManVsWorm.Game = {
   digHole: function() {
     var col, hole, row;
 
-    if (this.worm.gamestate.hasItem) {
-      this.worm.gamestate.hasItem = false;
-      col = this.worm.gamestate.col;
-      row = this.worm.gamestate.row;
+    if (this.worm.props.hasItem) {
+      this.worm.props.hasItem = false;
+      col = this.worm.props.col;
+      row = this.worm.props.row;
       this.playSound(this.sounds.dighole);
       hole = this.groups.holes.create(this.positionX(col), this.positionY(row), "hole");
       hole.scale.setTo(0.25, 0.25);
@@ -295,10 +296,10 @@ ManVsWorm.Game = {
   dropBlock: function() {
     var col, row;
 
-    if (this.man.gamestate.hasItem && this.man.gamestate.candrop) {
-      this.man.gamestate.hasItem = false;
-      col = this.man.gamestate.col;
-      row = this.man.gamestate.row;
+    if (this.man.props.hasItem && this.man.props.candrop) {
+      this.man.props.hasItem = false;
+      col = this.man.props.col;
+      row = this.man.props.row;
       // this.playSound();
       this.theDroppedBlock = this.add.sprite(this.positionX(col), this.positionY(row), "block");
       this.physics.arcade.enable(this.theDroppedBlock);
@@ -315,12 +316,12 @@ ManVsWorm.Game = {
 
     // man
     if (key === Phaser.Keyboard.A) { // move left
-      this.man.gamestate.col = this.man.gamestate.col - 1;
-      if (this.man.gamestate.col < 0) this.man.gamestate.col = this.columns - 1;
-      this.man.x = this.positionX(this.man.gamestate.col);
+      this.man.props.col = this.man.props.col - 1;
+      if (this.man.props.col < 0) this.man.props.col = this.columns - 1;
+      this.man.x = this.positionX(this.man.props.col);
     } else if (key === Phaser.Keyboard.D) { // move right
-      this.man.gamestate.col = (this.man.gamestate.col + 1) % this.columns;
-      this.man.x = this.positionX(this.man.gamestate.col);
+      this.man.props.col = (this.man.props.col + 1) % this.columns;
+      this.man.x = this.positionX(this.man.props.col);
     } else if (key === Phaser.Keyboard.W) { // jump
       this.man.body.velocity.y = -150;
     } else if (key === Phaser.Keyboard.E) { // build
@@ -329,17 +330,17 @@ ManVsWorm.Game = {
       this.dropBlock();
     // worm
     } else if (key === Phaser.Keyboard.J) { // move left
-      this.worm.gamestate.col = Math.max(this.worm.gamestate.col - 1, 0);
-      this.worm.x = this.positionX(this.worm.gamestate.col);
+      this.worm.props.col = Math.max(this.worm.props.col - 1, 0);
+      this.worm.x = this.positionX(this.worm.props.col);
     } else if (key === Phaser.Keyboard.L) { // move right
-      this.worm.gamestate.col = Math.min(this.worm.gamestate.col + 1, this.columns - 1);
-      this.worm.x = this.positionX(this.worm.gamestate.col);
+      this.worm.props.col = Math.min(this.worm.props.col + 1, this.columns - 1);
+      this.worm.x = this.positionX(this.worm.props.col);
     } else if (key === Phaser.Keyboard.I) { // move up
-      this.worm.gamestate.row = Math.max((this.worm.gamestate.row - 1), this.borderrow);
-      this.worm.y = this.positionY(this.worm.gamestate.row);
+      this.worm.props.row = Math.max((this.worm.props.row - 1), this.borderrow);
+      this.worm.y = this.positionY(this.worm.props.row);
     } else if (key === Phaser.Keyboard.K) { // move down
-      this.worm.gamestate.row = Math.min(this.worm.gamestate.row + 1, this.rows);
-      this.worm.y = this.positionY(this.worm.gamestate.row);
+      this.worm.props.row = Math.min(this.worm.props.row + 1, this.rows);
+      this.worm.y = this.positionY(this.worm.props.row);
     } else if (key === Phaser.Keyboard.U) {
       this.digHole();
     // other
@@ -395,7 +396,7 @@ ManVsWorm.Game = {
 
   score: function(scorer) {
     this.winner = scorer;
-    console.log(scorer.gamestate.name + " scores!");
+    console.log(scorer.props.name + " scores!");
   },
 
   start: function() {
@@ -414,7 +415,7 @@ ManVsWorm.Game = {
   },
 
   wormBitesMan: function() {
-    if (this.worm.gamestate.cankill) {
+    if (this.worm.props.cankill) {
       if (this.winner !== null) return; // we have a winner already
       // TODO play sound
       this.add.tween(this.man).to({ y: "-30" }, 100, "Elastic.easeInOut", true, 0, 0, true);
