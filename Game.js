@@ -56,7 +56,7 @@ ManVsWorm.Game = {
         floor.scale.setTo(0.25, 0.25);
         floor.anchor.setTo(0, 1);
         this.houselist[col].tiles.unshift(floor); // insert floor at the beginning to grow the house
-        this.checkWin(this.man, col);
+        if (this.houselist[col].row - this.houselist[col].height <= 0) this.score(this.man);
       } else { // build a new house
         row = this.man.gamestate.row;
         floor = this.groups.floors.create(this.positionX(col), this.positionY(row+1), "roof");
@@ -73,38 +73,22 @@ ManVsWorm.Game = {
   blockHitsWorm: function() {
     this.theDroppedBlock.kill();
     // TODO play sound
+    if (this.winner !== null) return; // we have a winner already
     this.add.tween(this.worm).to({ y: "-30" }, 100, "Sine.easeOut", true, 0, 0, true);
-    if (this.winner !== null) return; // we have a winner already
-    this.winner = this.man;
-    console.log("Man wins!");
-  },
-
-  checkWin: function(potentialWinner, col) {
-    if (this.winner !== null) return; // we have a winner already
-    if (potentialWinner === this.man) {
-      if (this.houselist[col].row - this.houselist[col].height <= 0) {
-        this.winner = this.man;
-        console.log("Man wins!");
-      }
-    } else if (potentialWinner === this.worm) {
-      if (this.houselist[col].row >= this.rows) {
-        this.winner = this.worm;
-        console.log("Worm wins!");
-      }
-    }
+    this.score(this.man);
   },
 
   collapseHouse: function(col) {
     var targetrow;
 
     this.playSound(this.sounds.movedown);
-    this.houselist[col]["row"]++;
-    targetrow = this.houselist[col]["row"];
-    _.each(this.houselist[col]["tiles"], function(tile) {
+    this.houselist[col].row++;
+    targetrow = this.houselist[col].row;
+    _.each(this.houselist[col].tiles, function(tile) {
       this.add.tween(tile).to({ y: this.positionY(targetrow) }, 1000, "Bounce.easeOut", true);
       targetrow--;
     }, this);
-    this.checkWin(this.worm, col);
+    if(this.houselist[col].row >= this.rows) this.score(this.worm);
   },
 
   collectBlock: function(player, block) {
@@ -185,7 +169,7 @@ ManVsWorm.Game = {
     this.man.body.collideWorldBounds = true;
     this.add.tween(this.man).to({ alpha: 1 }, 1000, "Sine.easeInOut", true);
     this.add.tween(this.man.scale).to({ x: 0.25, y: 0.25 }, 1000, "Bounce.easeInOut", true);
-    this.man.gamestate = { col: col, row: row, hasItem: false };
+    this.man.gamestate = { col: col, hasItem: false, name: "man", row: row };
 
     col = 11;
     row = 11;
@@ -198,7 +182,7 @@ ManVsWorm.Game = {
     this.worm.alpha = 0;
     this.add.tween(this.worm).to({ alpha: 1 }, 1000, "Sine.easeInOut", true);
     this.add.tween(this.worm.scale).to({ x: 0.25, y: 0.25 }, 1000, "Bounce.easeInOut", true);
-    this.worm.gamestate = { col: col, row: row, hasItem: false };
+    this.worm.gamestate = { col: col, hasItem: false, name: "worm", row: row };
 
     this.input.keyboard.onUpCallback = _.bind(this.keyInput, this);
     this.sound.setDecodedCallback(_.values(this.sounds), this.start, this); // start the game when sounds are decoded
@@ -409,6 +393,11 @@ ManVsWorm.Game = {
     }
   },
 
+  score: function(scorer) {
+    this.winner = scorer;
+    console.log(scorer.gamestate.name + " scores!");
+  },
+
   start: function() {
     this.isDay = true;
     this.dayNight(1);
@@ -429,8 +418,7 @@ ManVsWorm.Game = {
       if (this.winner !== null) return; // we have a winner already
       // TODO play sound
       this.add.tween(this.man).to({ y: "-30" }, 100, "Elastic.easeInOut", true, 0, 0, true);
-      this.winner = this.worm;
-      console.log("Worm wins!");
+      this.score(this.worm);
     }
   },
 
