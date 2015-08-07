@@ -157,7 +157,9 @@ ManVsWorm.Game = {
     this.groups.floors = this.add.group();
     this.groups.floors.enableBody = true;
     this.groups.foods = this.add.group();
+    this.groups.foods.enableBody = true;
     this.groups.blocks = this.add.group();
+    this.groups.blocks.enableBody = true;
 
     col = 4;
     row = 7;
@@ -191,35 +193,59 @@ ManVsWorm.Game = {
 },
 
   createBlocks: function(nthDday) {
-    var block, i, numBlocks = function(n) { return (n >= 7 ? 9: [3, 5, 7, 7, 7, 9][n-1]); };
+    var blocks = this.groups.blocks, numBlocksToProduce = function(day) { return (day >= 7 ? 9: [3, 5, 7, 7, 7, 9][day-1]); };
 
-    if (this.groups.blocks) this.groups.blocks.removeAll(true); // new group for each day / night
-    this.groups.blocks.enableBody = true;
-    for (i = 0; i < numBlocks(nthDday); i++) {
-      block = this.groups.blocks.create(this.positionX(Math.floor(this.columns * Math.random())), this.positionY(this.borderrow - 2), "block");
-      block.scale.setTo(0.25, 0.25);
-      block.anchor.setTo(0, 1);
-      block.body.gravity.y = 600;
-      block.body.bounce.y = 0.4;
-      block.alpha = 0;
-      this.add.tween(block).to({ alpha: 1 }, 1000, "Sine.easeInOut", true);
-    }
+    blocks.removeAll(true); // new group for each day / night
+
+    _.times(
+      numBlocksToProduce(nthDday),
+      function() {
+        var block, possibleCol;
+
+        do { // avoid dropping blocks at the man
+          possibleCol = _.random(this.columns - 1);
+        } while (possibleCol === this.man.props.col)
+
+        block = this.groups.blocks.create(this.positionX(possibleCol), this.positionY(this.borderrow - 2), "block");
+        block.scale.setTo(0.25, 0.25);
+        block.anchor.setTo(0, 1);
+        block.body.gravity.y = 600;
+        block.body.bounce.y = 0.4;
+        block.alpha = 0;
+        this.add.tween(block).to({ alpha: 1 }, 1000, "Sine.easeInOut", true);
+      },
+      this);
   },
 
   createFoods: function(nthDday) { // "Foods" consistency over spelling
-    var food, i, numFoods = function(n) { return (n >= 7 ? 9 : [3, 5, 7, 7, 7, 9][n-1]); };
+    var food, foods = this.groups.foods, numFoodsToProduce = function(day) { return (day >= 7 ? 9 : [3, 5, 7, 7, 7, 9][day-1]); };
 
-    if (this.groups.foods) this.groups.foods.removeAll(true); // new group for each day / night
-    this.groups.foods.enableBody = true
-    for (i = 0; i < numFoods(nthDday); i = i + 1) {
-      food = this.groups.foods.create(this.positionX(Math.floor(this.columns * Math.random())), this.positionY(this.borderrow + 1 + Math.floor(Math.random() * (this.rows - this.borderrow))), "food");
-      food.scale.setTo(0.25, 0.25);
-      food.body.setSize(256, 90, 0, -25); // must hit the man but not the plant a row above
-      food.anchor.setTo(0, 1);
-      food.alpha = 0;
-      this.add.tween(food).to({ alpha: 1 }, 1500, "Sine.easeInOut", true);
+    foods.removeAll(true); // new group for each day / night
+    _.times(
+      numFoodsToProduce(nthDday),
+      function() {
+        var food, possibleCol, possibleRow;
 
-    }
+        do { // avoid placing food on the worm or on a sunken house
+          possibleCol = _.random(this.columns - 1);
+          possibleRow = _.random(this.borderrow + 1, this.rows - 1);
+        } while ((possibleCol === this.worm.props.col && possibleRow === this.worm.props.row) ||
+                (function() { var house = this.houselist[possibleCol];
+                              if (house) {
+                                return (house.row - house.height + 1 <= possibleRow && possibleRow <= house.row);
+                              } else {
+                                return false;
+                              }
+                            }).call(this));
+
+        food = foods.create(this.positionX(possibleCol), this.positionY(possibleRow), "food");
+        food.scale.setTo(0.25, 0.25);
+        food.body.setSize(256, 90, 0, -25); // must hit the man but not the plant a row above
+        food.anchor.setTo(0, 1);
+        food.alpha = 0;
+        this.add.tween(food).to({ alpha: 1 }, 1500, "Sine.easeInOut", true);
+    },
+      this);
   },
 
   dayNight: function(nthday) {
