@@ -96,7 +96,7 @@ ManVsWorm.Game = {
     if (!player.props.hasItem) {
       player.props.hasItem = true;
       this.playSound(this.sounds.pickupblock);
-      this.add.tween(player.scale).to({ x: "+0.15", y: "+0.15",}, 100, "Sine.easeInOut", true, 0, 0, true);
+      this.add.tween(player.scale).to({ x: "+0.15" }, 100, "Sine.easeInOut", true, 0, 0, true);
       block.kill();
     }
   },
@@ -340,6 +340,7 @@ ManVsWorm.Game = {
       this.theDroppedBlock.scale.setTo(0.25, 0.25);
       this.theDroppedBlock.anchor.setTo(0, 1);
       this.theDroppedBlock.body.collideWorldBounds = true;
+      this.theDroppedBlock.body.setSize(256, 90, 0, -25); // must hit the worm correctly
       this.theDroppedBlock.body.bounce.y = 0.2;
       this.theDroppedBlock.body.gravity.y = 300;
     }
@@ -413,33 +414,39 @@ ManVsWorm.Game = {
     // console.log("Game.render()");
 
     if (this.settings.debug) { // show body and sprite boundaries
-      this.debug.body(this.man, "#ff00ff", false);
-      this.debug.body(this.worm, "#ff00ff", false);
-      this.groups.blocks.forEachAlive(function(block) { this.debug.body(block, "#ff00ff", false); });
-      this.groups.floors.forEachAlive(function(floor) { this.debug.body(floor, "#ff00ff", false) });
-      this.groups.foods.forEachAlive(function(food) { this.debug.body(food, "#ff00ff", false) });
-      this.groups.holes.forEachAlive(function(hole) { this.debug.body(hole, "#ff00ff", false) });
-      this.debug.spriteBounds(this.man, "#00ff0088", false);
-      this.debug.spriteBounds(this.worm, "#00ff0088", false);
-      this.groups.blocks.forEachAlive(function(block) { this.debug.spriteBounds(block, "#00ff0088", false); });
-      this.groups.floors.forEachAlive(function(floor) { this.debug.spriteBounds(floor, "#00ff0088", false) });
-      this.groups.foods.forEachAlive(function(food) { this.debug.spriteBounds(food, "#00ff0088", false) });
-      this.groups.holes.forEachAlive(function(hole) { this.debug.spriteBounds(hole, "#00ff0088", false) });
 
-      this.debug.inputInfo(32, 32);
+      if (this.theDroppedBlock) this.game.debug.body(this.theDroppedBlock, "#ff00ff", false);
+      this.game.debug.body(this.man, "#ff00ff", false);
+      this.game.debug.body(this.worm, "#ff00ff", false);
+      this.groups.blocks.forEachAlive(function(block) { this.game.debug.body(block, "#ff00ff", false); }, this);
+      this.groups.floors.forEachAlive(function(floor) { this.game.debug.body(floor, "#ff00ff", false) }, this);
+      this.groups.foods.forEachAlive(function(food) { this.game.debug.body(food, "#ff00ff", false) }, this);
+      this.groups.holes.forEachAlive(function(hole) { this.game.debug.body(hole, "#ff00ff", false) }, this);
+
+      if (this.theDroppedBlock) this.game.debug.spriteBounds(this.theDroppedBlock, "#00ff0088", false);
+      this.game.debug.spriteBounds(this.man, "#00ff0088", false);
+      this.game.debug.spriteBounds(this.worm, "#00ff0088", false);
+      this.groups.blocks.forEachAlive(function(block) { this.game.debug.spriteBounds(block, "#00ff0088", false); }, this);
+      this.groups.floors.forEachAlive(function(floor) { this.game.debug.spriteBounds(floor, "#00ff0088", false) }, this);
+      this.groups.foods.forEachAlive(function(food) { this.game.debug.spriteBounds(food, "#00ff0088", false) }, this);
+      this.groups.holes.forEachAlive(function(hole) { this.game.debug.spriteBounds(hole, "#00ff0088", false) }, this);
+
+      this.game.debug.inputInfo(32, 32);
     }
   },
 
   score: function(scorer) {
+
     this.winner = scorer;
     if(this.settings.music) {
       if (this.sounds.day.isPlaying) this.sounds.day.stop();
       if (this.sounds.night.isPlaying) this.sounds.night.stop();
     }
-    this.state.start('GameOver', true, false, scorer, this.map);
+    this.state.start('GameOver', true, false, (this.winner === this.man));
   },
 
   start: function() {
+    this.winner = null;
     this.isDay = true;
     this.dayNight(1);
   },

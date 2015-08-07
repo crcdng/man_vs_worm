@@ -21,12 +21,13 @@ ManVsWorm.MainMenu = {
   music: null,
 
   create: function() {
+    var height = this.game.height, width = this.game.width;
     console.log("MainMenu.create()");
 
     this.music = this.add.audio("title");
     this.music.play();
 
-    this.man = this.add.sprite(250, 280, "man");
+    this.man = this.add.sprite(width/4, height/3, "man");
     this.physics.arcade.enable(this.man);
     this.man.alpha = 0;
     this.man.scale.setTo(0.1, 0.1);
@@ -34,7 +35,7 @@ ManVsWorm.MainMenu = {
     this.add.tween(this.man).to({ alpha: 1 }, 3000, "Sine.easeInOut", true);
     this.add.tween(this.man.scale).to({ x: 0.5, y: 0.5 }, 3000, "Sine.easeInOut", true);
 
-    this.worm = this.add.sprite(750, 280, "worm");
+    this.worm = this.add.sprite(3*width/4, height/3, "worm");
     this.physics.arcade.enable(this.worm);
     this.worm.scale.setTo(0.1, 0.1);
     this.worm.anchor.setTo(0.5, 0.5);

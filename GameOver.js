@@ -18,44 +18,48 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 var ManVsWorm = ManVsWorm || {};
 
 ManVsWorm.GameOver = {
-  man: null,
-  map: null,
   winner: null,
-  worm: null,
+  loser: null,
+  isManWinner: null,
 
   create: function() {
-    var winLayer = this.map.createLayer("win");
+    var height = this.game.height, width = this.game.width;
     console.log("GameOver.create()");
 
-    this.man = this.add.sprite(250, 280, "man");
-    this.physics.arcade.enable(this.man);
-    this.man.alpha = 0;
-    this.man.scale.setTo(0.1, 0.1);
-    this.man.anchor.setTo(0.5, 0.5);
-    this.add.tween(this.man).to({ alpha: 1 }, 3000, "Sine.easeInOut", true);
-    this.add.tween(this.man.scale).to({ x: 0.5, y: 0.5 }, 3000, "Sine.easeInOut", true);
+    this.man = this.add.sprite(width/4, height/3, "man");
+    this.worm = this.add.sprite(3*width/4, height/3, "worm");
 
-    this.worm = this.add.sprite(750, 280, "worm");
-    this.physics.arcade.enable(this.worm);
-    this.worm.scale.setTo(0.5, 0.5);
-    this.worm.anchor.setTo(0.5, 0.5);
-    this.worm.alpha = 1;
-    this.add.tween(this.worm).to({ alpha: 0 }, 3000, "Sine.easeInOut", true);
-    this.add.tween(this.worm.scale).to({ x: 0.01, y: 0.01 }, 3000, "Sine.easeInOut", true);
+    this.winner = (this.isManWinner ? this.man : this.worm);
+    this.loser = (this.isManWinner ? this.worm : this.man);
+
+    this.physics.arcade.enable(this.winner);
+    this.winner.alpha = 0;
+    this.winner.scale.setTo(0.1, 0.1);
+    this.winner.anchor.setTo(0.5, 0.5);
+    this.add.tween(this.winner).to({ alpha: 1 }, 3000, "Sine.easeInOut", true);
+    this.add.tween(this.winner.scale).to({ x: 0.5, y: 0.5 }, 3000, "Sine.easeInOut", true);
+
+    this.physics.arcade.enable(this.loser);
+    this.loser.scale.setTo(0.5, 0.5);
+    this.loser.anchor.setTo(0.5, 0.5);
+    this.loser.alpha = 1;
+    this.add.tween(this.loser).to({ alpha: 0 }, 3000, "Sine.easeInOut", true);
+    this.add.tween(this.loser.scale).to({ x: 0.01, y: 0.01 }, 3000, "Sine.easeInOut", true);
 
     this.input.keyboard.onUpCallback = _.bind(this.keyInput, this);
   },
-  init: function(winner, map) {
-    console.log("GameOver.init(): " + winner.props.name);
 
-    this.map = map;
-    this.winner = winner;
+  init: function(isManWinner) {
+    this.isManWinner = isManWinner;
   },
+
   keyInput: function(event) {
     var key = event.keyCode;
     this.state.start("Game");
   },
+
   preload: function() {
     console.log("GameOver.preload()");
   }
+
 };
