@@ -111,6 +111,7 @@ ManVsWorm.Game = {
 
   create: function() {
     var col, row;
+    console.log("Game.create()");
 
     this.sounds.day = this.add.audio("day");
     this.sounds.night = this.add.audio("night");
@@ -376,6 +377,8 @@ ManVsWorm.Game = {
   },
 
   render: function() {
+    // console.log("Game.render()");
+
     if (this.settings.debug) { // show body and sprite boundaries
       this.debug.body(this.man, "#ff00ff", false);
       this.debug.body(this.worm, "#ff00ff", false);
@@ -396,7 +399,11 @@ ManVsWorm.Game = {
 
   score: function(scorer) {
     this.winner = scorer;
-    console.log(scorer.props.name + " scores!");
+    if(this.settings.music) {
+      if (this.sounds.day.isPlaying) this.sounds.day.stop();
+      if (this.sounds.night.isPlaying) this.sounds.night.stop();
+    }
+    this.state.start('GameOver', true, false, scorer, this.map);
   },
 
   start: function() {
@@ -405,6 +412,8 @@ ManVsWorm.Game = {
   },
 
   update: function() {
+    // console.log("Game.update()");
+
     this.physics.arcade.collide(this.man, this.layers.groundLayer);
     this.physics.arcade.collide(this.worm, this.layers.groundLayer);
     this.physics.arcade.collide(this.groups.blocks, this.layers.groundLayer);

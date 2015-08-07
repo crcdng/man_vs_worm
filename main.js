@@ -20,6 +20,7 @@ var ManVsWorm = ManVsWorm || {};
 ManVsWorm.game = new Phaser.Game(1024, 644, Phaser.AUTO, "");
 ManVsWorm.game.state.add("Boot", ManVsWorm.Boot);
 ManVsWorm.game.state.add("Preload", ManVsWorm.Preload);
-// ManVsWorm.game.state.add("MainMenu", ManVsWorm.MainMenu);
+ManVsWorm.game.state.add("MainMenu", ManVsWorm.MainMenu);
 ManVsWorm.game.state.add("Game", ManVsWorm.Game);
+ManVsWorm.game.state.add("GameOver", ManVsWorm.GameOver);
 ManVsWorm.game.state.start("Boot");

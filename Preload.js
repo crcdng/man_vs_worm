@@ -20,7 +20,7 @@ var ManVsWorm  = ManVsWorm || {};
 ManVsWorm.Preload = {
   create: function() {
     console.log("Preload.create()");
-    this.state.start('Game');
+    this.state.start("MainMenu");
   },
   preload: function() {
     console.log("Preload.preload()");
