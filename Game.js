@@ -30,7 +30,7 @@ ManVsWorm.Game = {
   map: null,
   moon: null,
   rows: 14,
-  settings: {music: true, sound: true, debug: false},
+  settings: {music: false, sound: true, debug: false},
   sounds: {},
   sun: null,
   theDroppedBlock: null,
@@ -222,8 +222,8 @@ ManVsWorm.Game = {
     }
   },
 
-  dayNight: function(n) {
-    var activeMusic, inactiveMusic, invisibleElement, invisibleLayer, n, stepTime, tween, visibleElement, visibleLayer;
+  dayNight: function(nthday) {
+    var activeMusic, inactiveMusic, invisibleElement, invisibleLayer, stepTime, tween, visibleElement, visibleLayer;
 
     if (this.isDay) {
       visibleElement = this.sun;
@@ -258,15 +258,22 @@ ManVsWorm.Game = {
     stepTime = (this.lengthDayNight/visibleElement.props.steps) * 1000;
     tween = this.add.tween(visibleElement);
     tween.to({ alpha: 1 }, 1000, "Sine.easeInOut");
-    for (n = 0; n < visibleElement.props.steps; n = n + 1) tween.to({ x: this.positionX(++visibleElement.props.col) }, stepTime, "Circ.easeInOut");
+    _.times(visibleElement.props.steps,
+            function() { tween.to({ x: this.positionX(++visibleElement.props.col) }, stepTime, "Circ.easeInOut"); },
+           this);
     tween.to({ alpha: 0 }, 1000, "Sine.easeInOut");
     tween.start();
 
-    this.createBlocks(n);
-    this.createFoods(n);
+    this.createBlocks(nthday);
+    this.createFoods(nthday);
+
     if (inactiveMusic.isPlaying) inactiveMusic.stop();
     this.playMusic(activeMusic);
-    this.time.events.add(this.lengthDayNight * 1000 + 2000, function() {this.isDay = !this.isDay; this.dayNight();}, this, (this.isDay ? n : ++n));
+
+    this.time.events.add(this.lengthDayNight * 1000 + 2000,
+                         function(n) {this.isDay = !this.isDay; this.dayNight(n);},
+                         this,
+                         (this.isDay ? nthday : ++nthday));
   },
 
   digHole: function() {
