@@ -13,20 +13,23 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 
+/*jslint nomen: true */
+/*global _, Phaser */
+
 "use strict";
 
-var ManVsWorm  = ManVsWorm || {};
+var ManVsWorm = ManVsWorm || {};
 
 ManVsWorm.Boot = {
-  create: function() {
+  create: function () {
     this.state.start("Preload");
   },
-  init: function() {
+  init: function () {
     this.scale.scaleMode = Phaser.ScaleManager.NO_SCALE;
     this.scale.pageAlignVertically = true;
     this.scale.pageAlignHorizontally = true;
   },
-  preload: function() {
+  preload: function () {
     this.load.image("preloadimg", "assets/dummy/preload.png");
   }
 };

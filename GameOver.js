@@ -13,6 +13,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 
+/*jslint nomen: true */
+/*global _, Phaser */
+
 "use strict";
 
 var ManVsWorm = ManVsWorm || {};
@@ -22,11 +25,11 @@ ManVsWorm.GameOver = {
   loser: null,
   isManWinner: null,
 
-  create: function() {
+  create: function () {
     var height = this.game.height, width = this.game.width;
 
-    this.man = this.add.sprite(width/4, height/3, "man");
-    this.worm = this.add.sprite(3*width/4, height/3, "worm");
+    this.man = this.add.sprite(width / 4, height / 3, "man");
+    this.worm = this.add.sprite(3 * width / 4, height / 3, "worm");
 
     this.winner = (this.isManWinner ? this.man : this.worm);
     this.loser = (this.isManWinner ? this.worm : this.man);
@@ -48,16 +51,16 @@ ManVsWorm.GameOver = {
     this.input.keyboard.onUpCallback = _.bind(this.keyInput, this);
   },
 
-  init: function(isManWinner) {
+  init: function (isManWinner) {
     this.isManWinner = isManWinner;
   },
 
-  keyInput: function(event) {
+  keyInput: function (event) {
     var key = event.keyCode;
     this.state.start("Game");
   },
 
-  preload: function() {
+  preload: function () {
   }
 
 };

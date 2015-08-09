@@ -13,6 +13,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 
+/*jslint nomen: true */
+/*global _, Phaser */
+
 "use strict";
 
 var ManVsWorm  = ManVsWorm || {};
@@ -20,19 +23,19 @@ var ManVsWorm  = ManVsWorm || {};
 ManVsWorm.MainMenu = {
   music: null,
 
-  create: function() {
+  create: function () {
     var height = this.game.height, width = this.game.width;
 
     this.music = this.add.audio("title");
     this.music.play();
-    this.man = this.add.sprite(width/4, height/3, "man");
+    this.man = this.add.sprite(width / 4, height / 3, "man");
     this.physics.arcade.enable(this.man);
     this.man.alpha = 0;
     this.man.scale.setTo(0.1, 0.1);
     this.man.anchor.setTo(0.5, 0.5);
     this.add.tween(this.man).to({ alpha: 1 }, 3000, "Sine.easeInOut", true);
     this.add.tween(this.man.scale).to({ x: 0.5, y: 0.5 }, 3000, "Sine.easeInOut", true);
-    this.worm = this.add.sprite(3*width/4, height/3, "worm");
+    this.worm = this.add.sprite(3 * width / 4, height / 3, "worm");
     this.physics.arcade.enable(this.worm);
     this.worm.scale.setTo(0.1, 0.1);
     this.worm.anchor.setTo(0.5, 0.5);
@@ -42,17 +45,17 @@ ManVsWorm.MainMenu = {
     this.input.keyboard.onUpCallback = _.bind(this.keyInput, this);
   },
 
-  keyInput: function(event) {
+  keyInput: function (event) {
     var key = event.keyCode;
     this.startGame();
   },
 
-  preload: function() {
+  preload: function () {
   },
 
-  startGame: function() {
+  startGame: function () {
     this.music.stop();
-	 this.state.start("Game");
+    this.state.start("Game");
   }
 
 };

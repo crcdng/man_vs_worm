@@ -13,6 +13,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 
+/*jslint nomen: true */
+/*global _, Phaser */
+
 "use strict";
 
 var ManVsWorm  = ManVsWorm || {};
@@ -36,15 +39,13 @@ ManVsWorm.Game = {
   worm: null,
 
   addFloor: function () {
-    var makeFloor = _.bind(function (group, spritekey, col, row) {
+    var col, house, makeFloor = _.bind(function (group, spritekey, col, row) {
       var floor = group.create(this.positionX(col), this.positionY(row + 1), spritekey);
       floor.scale.setTo(0.25, 0.25);
       floor.anchor.setTo(0, 1);
       this.add.tween(floor).to({ y: this.positionY(row) }, 1000, "Bounce.easeOut", true);
       return floor;
-    }, this);
-
-    var col, house, row, targetrow;
+    }, this), row, targetrow;
 
     if (this.man.props.hasBlock) {
       this.man.props.hasBlock = false;
@@ -84,7 +85,6 @@ ManVsWorm.Game = {
   collapseHouse: function (col) {
     var house = this.getHouse(col), targetrow;
 
-    console.log("collapse " + col);
     this.playSound(this.sounds.movedown);
     house.props.row += 1;
     targetrow = house.props.row - (house.props.height - 1);
@@ -93,11 +93,11 @@ ManVsWorm.Game = {
       targetrow += 1;
     }, this);
 
-    if(house.props.row >= this.rows) this.score(this.worm);
+    if (house.props.row >= this.rows) { this.score(this.worm); }
   },
 
   collectBlock: function (player, block) {
-      var anchorX, anchorY, tween;
+    var anchorX, anchorY, tween;
 
     if (!player.props.hasBlock) {
       player.props.hasBlock = true;
@@ -189,22 +189,20 @@ ManVsWorm.Game = {
 
     this.input.keyboard.onUpCallback = _.bind(this.keyInput, this);
     this.sound.setDecodedCallback(_.values(this.sounds), this.start, this); // start the game when sounds are decoded
-},
+  },
 
-  createBlocks: function(nthDday) {
-    var blocks = this.groups.blocks, numBlocksToProduce = function(day) { return (day >= 7 ? 9: [3, 5, 7, 7, 7, 9][day-1]); };
+  createBlocks: function (nthDday) {
+    var blocks = this.groups.blocks, numBlocksToProduce = function (day) { return (day >= 7 ? 9 : [3, 5, 7, 7, 7, 9][day - 1]); };
 
     blocks.removeAll(true); // new group for each day / night
 
-    _.times(
-      numBlocksToProduce(nthDday),
-      function() {
+    _.times(numBlocksToProduce(nthDday),
+      function () {
         var block, possibleCol;
 
         do { // avoid dropping blocks at the man
           possibleCol = _.random(this.columns - 1);
-        } while (possibleCol === this.man.props.col)
-
+        } while (possibleCol === this.man.props.col);
         block = this.groups.blocks.create(this.positionX(possibleCol), this.positionY(this.borderrow - 2), "block");
         block.scale.setTo(0.25, 0.25);
         block.anchor.setTo(0, 1);
@@ -213,27 +211,24 @@ ManVsWorm.Game = {
         block.alpha = 0;
         this.add.tween(block).to({ alpha: 1 }, 1000, "Sine.easeInOut", true);
         block.props = { col: possibleCol, row: this.borderrow - 2};
-
-      },
-      this);
+      }, this);
   },
 
-  createFoods: function(nthDday) { // "Foods" consistency over spelling
-    var food, foods = this.groups.foods, numFoodsToProduce = function(day) { return (day >= 7 ? 9 : [3, 5, 7, 7, 7, 9][day-1]); };
+  createFoods: function (nthDday) { // "Foods" consistency over spelling
+    var food, foods = this.groups.foods, numFoodsToProduce = function (day) { return (day >= 7 ? 9 : [3, 5, 7, 7, 7, 9][day - 1]); };
 
     foods.removeAll(true); // new group mwembers for each day / night
     _.times(
       numFoodsToProduce(nthDday),
-      function() {
+      function () {
         var food, possibleCol, possibleRow;
 
         do { // avoid placing food on the worm or on a sunken house
           possibleCol = _.random(this.columns - 1);
           possibleRow = _.random(this.borderrow + 1, this.rows - 1);
         } while ((possibleCol === this.worm.props.col && possibleRow === this.worm.props.row) ||
-                (function() { var house = this.getHouse(possibleCol);
-                              if (house) {
-                                return (house.props.row - house.props.height + 1 <= possibleRow && possibleRow <= house.props.row);
+                (function () { var house = this.getHouse(possibleCol);
+                              if (house) { return (house.props.row - house.props.height + 1 <= possibleRow && possibleRow <= house.props.row);
                               } else {
                                 return false;
                               }
@@ -247,11 +242,10 @@ ManVsWorm.Game = {
         this.add.tween(food).to({ alpha: 1 }, 1500, "Sine.easeInOut", true);
         food.props = { col: possibleCol, row: possibleRow };
 
-    },
-      this);
+    }, this);
   },
 
-  dayNight: function(nthday) {
+  dayNight: function (nthday) {
     var activeMusic, inactiveMusic, invisibleElement, invisibleLayer, stepTime, tween, visibleElement, visibleLayer;
 
     if (this.isDay) {
@@ -284,11 +278,11 @@ ManVsWorm.Game = {
 
     visibleElement.alpha = 0;
     visibleElement.x = this.positionX(visibleElement.props.col);
-    stepTime = (this.lengthDayNight/visibleElement.props.steps) * 1000;
+    stepTime = (this.lengthDayNight / visibleElement.props.steps) * 1000;
     tween = this.add.tween(visibleElement);
     tween.to({ alpha: 1 }, 1000, "Sine.easeInOut");
     _.times(visibleElement.props.steps,
-            function() { tween.to({ x: this.positionX(++visibleElement.props.col) }, stepTime, "Circ.easeInOut"); },
+            function () { tween.to({ x: this.positionX(++visibleElement.props.col) }, stepTime, "Circ.easeInOut"); },
            this);
     tween.to({ alpha: 0 }, 1000, "Sine.easeInOut");
     tween.start();
@@ -296,16 +290,16 @@ ManVsWorm.Game = {
     this.createBlocks(nthday);
     this.createFoods(nthday);
 
-    if (inactiveMusic.isPlaying) inactiveMusic.stop();
+    if (inactiveMusic.isPlaying) { inactiveMusic.stop(); }
     this.playMusic(activeMusic);
 
     this.time.events.add(this.lengthDayNight * 1000 + 2000,
-                         function(n) {this.isDay = !this.isDay; this.dayNight(n);},
+                         function (n) { this.isDay = !this.isDay; this.dayNight(n); },
                          this,
                          (this.isDay ? nthday : ++nthday));
   },
 
-  digHole: function() {
+  digHole: function () {
     var col, hole, row;
 
     if (this.worm.props.hasBlock) {
@@ -320,13 +314,13 @@ ManVsWorm.Game = {
       this.add.tween(hole).to({ alpha: 1 }, 1000, "Sine.easeInOut", true);
       hole.props = { col: col, row: row };
 
-      if (this.getHouse(col)) this.collapseHouse(col);
+      if (this.getHouse(col)) { this.collapseHouse(col); }
     } else {
-      // play sound unsuccessful
+      // TODO play sound unsuccessful
     }
   },
 
-  dropBlock: function() {
+  dropBlock: function () {
     var col, row;
 
     if (this.man.props.hasBlock && this.man.props.candrop) {
@@ -345,17 +339,17 @@ ManVsWorm.Game = {
     }
   },
 
-  getHouse: function(column) {
-    return _.find(this.groups.houses.children, function(house) { return ( house.props.col === column); }, this);
+  getHouse: function (column) {
+    return _.find(this.groups.houses.children, function (house) { return (house.props.col === column); }, this);
   },
 
-  keyInput: function(event) {
-    var key = event.keyCode;
+  keyInput: function (event) {
+    var key = event.keyCode, music;
 
     // man
     if (key === Phaser.Keyboard.A) { // move left
       this.man.props.col = this.man.props.col - 1;
-      if (this.man.props.col < 0) this.man.props.col = this.columns - 1;
+      if (this.man.props.col < 0) { this.man.props.col = this.columns - 1; }
       this.man.x = this.positionX(this.man.props.col);
     } else if (key === Phaser.Keyboard.D) { // move right
       this.man.props.col = (this.man.props.col + 1) % this.columns;
@@ -383,10 +377,8 @@ ManVsWorm.Game = {
       this.digHole();
     // other
     } else if (key === Phaser.Keyboard.G) {
-      var music = (this.isDay ? this.sounds.day : this.sounds.night);
-
+      music = (this.isDay ? this.sounds.day : this.sounds.night);
       this.settings.music = !this.settings.music;
-
       if (this.settings.music) {
         this.playMusic(this.music);
       } else {
@@ -397,64 +389,64 @@ ManVsWorm.Game = {
     }
   },
 
-  playMusic: function(music) {
-    if (this.settings.music) music.loopFull();
+  playMusic: function (music) {
+    if (this.settings.music) { music.loopFull(); }
   },
 
-  playSound: function(sound) {
-    if (this.settings.sound) sound.play();
+  playSound: function (sound) {
+    if (this.settings.sound) { sound.play(); }
   },
 
-  positionX: function(column) {
+  positionX: function (column) {
     return column * (this.world.width / this.columns);
   },
 
-  positionY: function(row) {
+  positionY: function (row) {
     return row * (this.world.height / this.rows);
   },
 
-  render: function() {
+  render: function () {
     // console.log("Game.render()");
 
     if (this.settings.debug) { // show body and sprite boundaries
 
-      if (this.theDroppedBlock) this.game.debug.body(this.theDroppedBlock, "#ff00ff", false);
+      if (this.theDroppedBlock) { this.game.debug.body(this.theDroppedBlock, "#ff00ff", false); }
       this.game.debug.body(this.man, "#ff00ff", false);
       this.game.debug.body(this.worm, "#ff00ff", false);
-      this.groups.blocks.forEachAlive(function(block) { this.game.debug.body(block, "#ff00ff", false); }, this);
-      this.groups.houses.forEachAlive(function(floor) { this.game.debug.body(floor, "#ff00ff", false) }, this);
-      this.groups.foods.forEachAlive(function(food) { this.game.debug.body(food, "#ff00ff", false) }, this);
-      this.groups.holes.forEachAlive(function(hole) { this.game.debug.body(hole, "#ff00ff", false) }, this);
+      this.groups.blocks.forEachAlive(function (block) { this.game.debug.body(block, "#ff00ff", false); }, this);
+      this.groups.houses.forEachAlive(function (floor) { this.game.debug.body(floor, "#ff00ff", false); }, this);
+      this.groups.foods.forEachAlive(function (food) { this.game.debug.body(food, "#ff00ff", false); }, this);
+      this.groups.holes.forEachAlive(function (hole) { this.game.debug.body(hole, "#ff00ff", false); }, this);
 
-      if (this.theDroppedBlock) this.game.debug.spriteBounds(this.theDroppedBlock, "#00ff0088", false);
+      if (this.theDroppedBlock) { this.game.debug.spriteBounds(this.theDroppedBlock, "#00ff0088", false); }
       this.game.debug.spriteBounds(this.man, "#00ff0088", false);
       this.game.debug.spriteBounds(this.worm, "#00ff0088", false);
-      this.groups.blocks.forEachAlive(function(block) { this.game.debug.spriteBounds(block, "#00ff0088", false); }, this);
-      this.groups.houses.forEachAlive(function(floor) { this.game.debug.spriteBounds(floor, "#00ff0088", false) }, this);
-      this.groups.foods.forEachAlive(function(food) { this.game.debug.spriteBounds(food, "#00ff0088", false) }, this);
-      this.groups.holes.forEachAlive(function(hole) { this.game.debug.spriteBounds(hole, "#00ff0088", false) }, this);
+      this.groups.blocks.forEachAlive(function (block) { this.game.debug.spriteBounds(block, "#00ff0088", false); }, this);
+      this.groups.houses.forEachAlive(function (floor) { this.game.debug.spriteBounds(floor, "#00ff0088", false); }, this);
+      this.groups.foods.forEachAlive(function (food) { this.game.debug.spriteBounds(food, "#00ff0088", false); }, this);
+      this.groups.holes.forEachAlive(function (hole) { this.game.debug.spriteBounds(hole, "#00ff0088", false); }, this);
 
       this.game.debug.inputInfo(32, 32);
     }
   },
 
-  score: function(scorer) {
+  score: function (scorer) {
 
     this.winner = scorer;
-    if(this.settings.music) {
-      if (this.sounds.day.isPlaying) this.sounds.day.stop();
-      if (this.sounds.night.isPlaying) this.sounds.night.stop();
+    if (this.settings.music) {
+      if (this.sounds.day.isPlaying) { this.sounds.day.stop(); }
+      if (this.sounds.night.isPlaying) { this.sounds.night.stop(); }
     }
     this.state.start('GameOver', true, false, (this.winner === this.man));
   },
 
-  start: function() {
+  start: function () {
     this.winner = null;
     this.isDay = true;
     this.dayNight(1);
   },
 
-  update: function() {
+  update: function () {
     // console.log("Game.update()");
 
     this.physics.arcade.collide(this.man, this.layers.groundLayer);
@@ -466,13 +458,13 @@ ManVsWorm.Game = {
     this.physics.arcade.overlap(this.theDroppedBlock, this.worm, this.blockHitsWorm, null, this);
   },
 
-  wormBitesMan: function() {
+  wormBitesMan: function () {
     if (this.worm.props.cankill) {
-      if (this.winner !== null) return; // we have a winner already
+      if (this.winner !== null) { return; } // we have a winner already
       // TODO play sound
       this.add.tween(this.man).to({ y: "-30" }, 100, "Elastic.easeInOut", true, 0, 0, true);
       this.score(this.worm);
     }
-  },
+  }
 
-}
+};
