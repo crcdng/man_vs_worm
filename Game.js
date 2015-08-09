@@ -20,17 +20,17 @@ var ManVsWorm  = ManVsWorm || {};
 ManVsWorm.Game = {
   borderrow: 8,
   columns: 16,
-  groups: {blocks: null, floors: null, foods: null, holes: null},
+  groups: { blocks: null, floors: null, foods: null, holes: null },
   holelist: [],
   houselist: [],
   isDay: null,
-  layers: {dayLayer: null, groundLayer: null, nightLayer: null},
+  layers: { dayLayer: null, groundLayer: null, nightLayer: null },
   lengthDayNight: 10,
   man: null,
   map: null,
   moon: null,
   rows: 14,
-  settings: {music: false, sound: true, debug: false},
+  settings: { music: true, sound: true, debug: false },
   sounds: {},
   sun: null,
   theDroppedBlock: null,
@@ -40,8 +40,8 @@ ManVsWorm.Game = {
   addFloor: function() {
     var col, floor, house, row, targetrow;
 
-    if (this.man.props.hasItem) {
-      this.man.props.hasItem = false;
+    if (this.man.props.hasBlock) {
+      this.man.props.hasBlock = false;
       col = this.man.props.col;
       house = this.houselist[col];
       this.playSound(this.sounds.buildblock);
@@ -93,17 +93,19 @@ ManVsWorm.Game = {
   },
 
   collectBlock: function(player, block) {
-    if (!player.props.hasItem) {
-      player.props.hasItem = true;
+      var anchorX, anchorY, tween;
+
+    if (!player.props.hasBlock) {
+      player.props.hasBlock = true;
       this.playSound(this.sounds.pickupblock);
-      this.add.tween(player.scale).to({ x: "+0.15" }, 100, "Sine.easeInOut", true, 0, 0, true);
+      tween = this.add.tween(player.scale).to({ x: "+0.15" }, 200, "Sine.easeInOut", true, 0, 0, true);
       block.kill();
     }
   },
 
   collectFood: function(player, food) {
-    if (!player.props.hasItem) {
-      player.props.hasItem = true;
+    if (!player.props.hasBlock) {
+      player.props.hasBlock = true;
       this.playSound(this.sounds.pickupfood);
       food.kill();
     }
@@ -133,25 +135,6 @@ ManVsWorm.Game = {
     this.layers.dayLayer = this.map.createLayer("day");
     this.map.setCollision(4, true, "ground");
 
-    var props = {
-      col: 3,
-      row: 2,
-      startCol: 3,
-      steps: 10
-    };
-
-    this.sun = this.add.sprite(this.positionX(3), this.positionY(2), "sun");
-    this.physics.arcade.enable(this.sun);
-    this.sun.scale.setTo(0.25, 0.25);
-    this.sun.anchor.setTo(0, 1);
-    this.sun.props = _.extend({}, props);
-
-    this.moon = this.add.sprite(this.positionX(3), this.positionY(2), "moon");
-    this.physics.arcade.enable(this.moon);
-    this.moon.scale.setTo(0.25, 0.25);
-    this.moon.anchor.setTo(0, 1);
-    this.moon.props = _.extend({}, props);
-
     this.groups.holes = this.add.group();
     this.groups.holes.enableBody = true;
     this.groups.floors = this.add.group();
@@ -160,6 +143,19 @@ ManVsWorm.Game = {
     this.groups.foods.enableBody = true;
     this.groups.blocks = this.add.group();
     this.groups.blocks.enableBody = true;
+
+    col = 3;
+    row = 2;
+    this.sun = this.add.sprite(this.positionX(col), this.positionY(row), "sun");
+    this.physics.arcade.enable(this.sun);
+    this.sun.scale.setTo(0.25, 0.25);
+    this.sun.anchor.setTo(0, 1);
+    this.sun.props = { col: col, startCol: 3, row: row, steps: 10};
+    this.moon = this.add.sprite(this.positionX(col), this.positionY(row), "moon");
+    this.physics.arcade.enable(this.moon);
+    this.moon.scale.setTo(0.25, 0.25);
+    this.moon.anchor.setTo(0, 1);
+    this.moon.props = { col: col, startCol: 3, row: row, steps: 10};
 
     col = 4;
     row = 7;
@@ -173,7 +169,7 @@ ManVsWorm.Game = {
     this.man.body.collideWorldBounds = true;
     this.add.tween(this.man).to({ alpha: 1 }, 1000, "Sine.easeInOut", true);
     this.add.tween(this.man.scale).to({ x: 0.25, y: 0.25 }, 1000, "Bounce.easeInOut", true);
-    this.man.props = { col: col, hasItem: false, name: "man", row: row };
+    this.man.props = { col: col, hasBlock: false, name: "man", row: row };
 
     col = 11;
     row = 11;
@@ -186,7 +182,7 @@ ManVsWorm.Game = {
     this.worm.alpha = 0;
     this.add.tween(this.worm).to({ alpha: 1 }, 1000, "Sine.easeInOut", true);
     this.add.tween(this.worm.scale).to({ x: 0.25, y: 0.25 }, 1000, "Bounce.easeInOut", true);
-    this.worm.props = { col: col, hasItem: false, name: "worm", row: row };
+    this.worm.props = { col: col, hasBlock: false, name: "worm", row: row };
 
     this.input.keyboard.onUpCallback = _.bind(this.keyInput, this);
     this.sound.setDecodedCallback(_.values(this.sounds), this.start, this); // start the game when sounds are decoded
@@ -213,6 +209,8 @@ ManVsWorm.Game = {
         block.body.bounce.y = 0.4;
         block.alpha = 0;
         this.add.tween(block).to({ alpha: 1 }, 1000, "Sine.easeInOut", true);
+        block.props = { col: possibleCol, row: this.borderrow - 2};
+
       },
       this);
   },
@@ -244,6 +242,8 @@ ManVsWorm.Game = {
         food.anchor.setTo(0, 1);
         food.alpha = 0;
         this.add.tween(food).to({ alpha: 1 }, 1500, "Sine.easeInOut", true);
+        food.props = { col: possibleCol, row: possibleRow };
+
     },
       this);
   },
@@ -305,8 +305,8 @@ ManVsWorm.Game = {
   digHole: function() {
     var col, hole, row;
 
-    if (this.worm.props.hasItem) {
-      this.worm.props.hasItem = false;
+    if (this.worm.props.hasBlock) {
+      this.worm.props.hasBlock = false;
       col = this.worm.props.col;
       row = this.worm.props.row;
       this.playSound(this.sounds.dighole);
@@ -315,6 +315,7 @@ ManVsWorm.Game = {
       hole.anchor.setTo(0, 1);
       hole.alpha = 0;
       this.add.tween(hole).to({ alpha: 1 }, 1000, "Sine.easeInOut", true);
+
       if ( this.holelist[col] ) { // holes already exist in this column
         this.holelist[col]["amount"]++;
         this.holelist[col]["tiles"].push(hole);
@@ -330,8 +331,8 @@ ManVsWorm.Game = {
   dropBlock: function() {
     var col, row;
 
-    if (this.man.props.hasItem && this.man.props.candrop) {
-      this.man.props.hasItem = false;
+    if (this.man.props.hasBlock && this.man.props.candrop) {
+      this.man.props.hasBlock = false;
       col = this.man.props.col;
       row = this.man.props.row;
       // this.playSound();
