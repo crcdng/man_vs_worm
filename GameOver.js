@@ -24,7 +24,6 @@ ManVsWorm.GameOver = {
 
   create: function() {
     var height = this.game.height, width = this.game.width;
-    console.log("GameOver.create()");
 
     this.man = this.add.sprite(width/4, height/3, "man");
     this.worm = this.add.sprite(3*width/4, height/3, "worm");
@@ -59,7 +58,6 @@ ManVsWorm.GameOver = {
   },
 
   preload: function() {
-    console.log("GameOver.preload()");
   }
 
 };

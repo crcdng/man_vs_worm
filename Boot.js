@@ -19,17 +19,14 @@ var ManVsWorm  = ManVsWorm || {};
 
 ManVsWorm.Boot = {
   create: function() {
-    console.log("Boot.create()");
     this.state.start("Preload");
   },
   init: function() {
-    console.log("Boot.create()");
     this.scale.scaleMode = Phaser.ScaleManager.NO_SCALE;
     this.scale.pageAlignVertically = true;
     this.scale.pageAlignHorizontally = true;
   },
   preload: function() {
-    console.log("Boot.preload()");
     this.load.image("preloadimg", "assets/dummy/preload.png");
   }
 };

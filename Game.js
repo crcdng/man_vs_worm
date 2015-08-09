@@ -20,8 +20,7 @@ var ManVsWorm  = ManVsWorm || {};
 ManVsWorm.Game = {
   borderrow: 8,
   columns: 16,
-  groups: { blocks: null, floors: null, foods: null, holes: null },
-  houselist: [],
+  groups: { blocks: null, houses: null, foods: null, holes: null },
   isDay: null,
   layers: { dayLayer: null, groundLayer: null, nightLayer: null },
   lengthDayNight: 10,
@@ -36,62 +35,68 @@ ManVsWorm.Game = {
   winner: null,
   worm: null,
 
-  addFloor: function() {
-    var col, floor, house, row, targetrow;
+  addFloor: function () {
+    var makeFloor = _.bind(function (group, spritekey, col, row) {
+      var floor = group.create(this.positionX(col), this.positionY(row + 1), spritekey);
+      floor.scale.setTo(0.25, 0.25);
+      floor.anchor.setTo(0, 1);
+      this.add.tween(floor).to({ y: this.positionY(row) }, 1000, "Bounce.easeOut", true);
+      return floor;
+    }, this);
+
+    var col, house, row, targetrow;
 
     if (this.man.props.hasBlock) {
       this.man.props.hasBlock = false;
       col = this.man.props.col;
-      house = this.houselist[col];
+      house = this.getHouse(col);
       this.playSound(this.sounds.buildblock);
-      if (house) { // house exists at player column
-        row = house.row; // this.man.props.row;
-        targetrow = row - 1;
-        house.height += 1;
-        _.each(house.tiles, function(tile) {
-          this.add.tween(tile).to({ y: this.positionY(targetrow) }, 1000, "Bounce.easeOut", true);
-          targetrow -= 1;
+      if (house) { // a house exists at the player column
+        row = house.props.row;
+        house.props.height += 1;
+        targetrow = row - (house.props.height - 1);
+        house.forEachAlive(function (currentfloor) {
+          this.add.tween(currentfloor).to({ y: this.positionY(targetrow) }, 1000, "Bounce.easeOut", true);
+          targetrow += 1;
         }, this);
-        floor = this.groups.floors.create(this.positionX(col), this.positionY(row), "floor");
-        floor.scale.setTo(0.25, 0.25);
-        floor.anchor.setTo(0, 1);
-        house.tiles.unshift(floor); // insert floor at the beginning to grow the house
-        if (house.row - house.height <= 0) this.score(this.man);
+        makeFloor(house, "floor", col, row);
+        if (house.props.row - house.props.height <= 0) { this.score(this.man); }
       } else { // build a new house
         row = this.man.props.row;
-        floor = this.groups.floors.create(this.positionX(col), this.positionY(row+1), "roof");
-        this.add.tween(floor).to({ y: this.positionY(row) }, 1000, "Bounce.easeOut", true);
-        floor.scale.setTo(0.25, 0.25);
-        floor.anchor.setTo(0, 1);
-        this.houselist[col] = { height: 1, row: row, tiles: [floor] }; // row: foot of the house
+        house = this.add.group();
+        this.groups.houses.add(house);
+        house.props = { col: col, height: 1, row: row };
+        makeFloor(house, "roof", col, row);
       }
     } else {
-      // play sound unsuccessful
+      // TODO play sound unsuccessful attempt
     }
   },
 
-  blockHitsWorm: function() {
+  blockHitsWorm: function () {
     this.theDroppedBlock.kill();
     // TODO play sound
-    if (this.winner !== null) return; // we have a winner already
+    if (this.winner !== null) { return; } // we have a winner already
     this.add.tween(this.worm).to({ y: "-30" }, 100, "Sine.easeOut", true, 0, 0, true);
     this.score(this.man);
   },
 
-  collapseHouse: function(col) {
-    var house = this.houselist[col], targetrow;
+  collapseHouse: function (col) {
+    var house = this.getHouse(col), targetrow;
 
+    console.log("collapse " + col);
     this.playSound(this.sounds.movedown);
-    house.row += 1;
-    targetrow = house.row;
-    _.each(house.tiles, function(tile) {
-      this.add.tween(tile).to({ y: this.positionY(targetrow) }, 1000, "Bounce.easeOut", true);
-      targetrow -= 1;
+    house.props.row += 1;
+    targetrow = house.props.row - (house.props.height - 1);
+    house.forEachAlive(function (currentfloor) {
+      this.add.tween(currentfloor).to({ y: this.positionY(targetrow) }, 1000, "Bounce.easeOut", true);
+      targetrow += 1;
     }, this);
-    if(house.row >= this.rows) this.score(this.worm);
+
+    if(house.props.row >= this.rows) this.score(this.worm);
   },
 
-  collectBlock: function(player, block) {
+  collectBlock: function (player, block) {
       var anchorX, anchorY, tween;
 
     if (!player.props.hasBlock) {
@@ -102,7 +107,7 @@ ManVsWorm.Game = {
     }
   },
 
-  collectFood: function(player, food) {
+  collectFood: function (player, food) {
     if (!player.props.hasBlock) {
       player.props.hasBlock = true;
       this.playSound(this.sounds.pickupfood);
@@ -110,9 +115,8 @@ ManVsWorm.Game = {
     }
   },
 
-  create: function() {
+  create: function () {
     var col, row;
-    console.log("Game.create()");
 
     this.sounds.day = this.add.audio("day");
     this.sounds.night = this.add.audio("night");
@@ -136,8 +140,8 @@ ManVsWorm.Game = {
 
     this.groups.holes = this.add.group();
     this.groups.holes.enableBody = true;
-    this.groups.floors = this.add.group();
-    this.groups.floors.enableBody = true;
+    this.groups.houses = this.add.group();
+    this.groups.houses.enableBody = true;
     this.groups.foods = this.add.group();
     this.groups.foods.enableBody = true;
     this.groups.blocks = this.add.group();
@@ -227,9 +231,9 @@ ManVsWorm.Game = {
           possibleCol = _.random(this.columns - 1);
           possibleRow = _.random(this.borderrow + 1, this.rows - 1);
         } while ((possibleCol === this.worm.props.col && possibleRow === this.worm.props.row) ||
-                (function() { var house = this.houselist[possibleCol];
+                (function() { var house = this.getHouse(possibleCol);
                               if (house) {
-                                return (house.row - house.height + 1 <= possibleRow && possibleRow <= house.row);
+                                return (house.props.row - house.props.height + 1 <= possibleRow && possibleRow <= house.props.row);
                               } else {
                                 return false;
                               }
@@ -316,7 +320,7 @@ ManVsWorm.Game = {
       this.add.tween(hole).to({ alpha: 1 }, 1000, "Sine.easeInOut", true);
       hole.props = { col: col, row: row };
 
-      if (this.houselist[col]) this.collapseHouse(col);
+      if (this.getHouse(col)) this.collapseHouse(col);
     } else {
       // play sound unsuccessful
     }
@@ -339,6 +343,10 @@ ManVsWorm.Game = {
       this.theDroppedBlock.body.bounce.y = 0.2;
       this.theDroppedBlock.body.gravity.y = 300;
     }
+  },
+
+  getHouse: function(column) {
+    return _.find(this.groups.houses.children, function(house) { return ( house.props.col === column); }, this);
   },
 
   keyInput: function(event) {
@@ -414,7 +422,7 @@ ManVsWorm.Game = {
       this.game.debug.body(this.man, "#ff00ff", false);
       this.game.debug.body(this.worm, "#ff00ff", false);
       this.groups.blocks.forEachAlive(function(block) { this.game.debug.body(block, "#ff00ff", false); }, this);
-      this.groups.floors.forEachAlive(function(floor) { this.game.debug.body(floor, "#ff00ff", false) }, this);
+      this.groups.houses.forEachAlive(function(floor) { this.game.debug.body(floor, "#ff00ff", false) }, this);
       this.groups.foods.forEachAlive(function(food) { this.game.debug.body(food, "#ff00ff", false) }, this);
       this.groups.holes.forEachAlive(function(hole) { this.game.debug.body(hole, "#ff00ff", false) }, this);
 
@@ -422,7 +430,7 @@ ManVsWorm.Game = {
       this.game.debug.spriteBounds(this.man, "#00ff0088", false);
       this.game.debug.spriteBounds(this.worm, "#00ff0088", false);
       this.groups.blocks.forEachAlive(function(block) { this.game.debug.spriteBounds(block, "#00ff0088", false); }, this);
-      this.groups.floors.forEachAlive(function(floor) { this.game.debug.spriteBounds(floor, "#00ff0088", false) }, this);
+      this.groups.houses.forEachAlive(function(floor) { this.game.debug.spriteBounds(floor, "#00ff0088", false) }, this);
       this.groups.foods.forEachAlive(function(food) { this.game.debug.spriteBounds(food, "#00ff0088", false) }, this);
       this.groups.holes.forEachAlive(function(hole) { this.game.debug.spriteBounds(hole, "#00ff0088", false) }, this);
 

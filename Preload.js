@@ -21,18 +21,15 @@ ManVsWorm.Preload = {
   preloadBar: null,
   ready: false,
 
-  create: function() {
-    console.log("Preload.create()");
+  create: function () {
     this.preloadBar.cropEnabled = false;
     this.state.start("MainMenu");
   },
-  preload: function() {
-    console.log("Preload.preload()");
 
-    this.preloadBar = this.add.sprite(this.game.width/2 , this.game.height/2, "preloadimg");
+  preload: function () {
+    this.preloadBar = this.add.sprite(this.game.width / 2, this.game.height / 2, "preloadimg");
     this.preloadBar.anchor.setTo(0.5, 0);
     this.load.setPreloadSprite(this.preloadBar);
-
     this.load.tilemap("map", "assets/spritesheets/tilemap.json", null, Phaser.Tilemap.TILED_JSON);
     this.load.image("block", "assets/sprites/house_block copy.png");
     this.load.image("floor", "assets/sprites/house.png");
@@ -56,8 +53,8 @@ ManVsWorm.Preload = {
     this.load.audio("wormwins", ["assets/snd/ManVsWorm-Wormwin.ogg", "assets/snd/ManVsWorm-Wormwin.mp3"]);
   },
 
-  update: function() {
-    if (this.cache.isSoundDecoded("title") && this.ready == false) {
+  update: function () {
+    if (this.cache.isSoundDecoded("title") && this.ready === false) {
       this.ready = true;
       this.state.start('MainMenu');
     }
