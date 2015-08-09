@@ -21,7 +21,6 @@ ManVsWorm.Game = {
   borderrow: 8,
   columns: 16,
   groups: { blocks: null, floors: null, foods: null, holes: null },
-  holelist: [],
   houselist: [],
   isDay: null,
   layers: { dayLayer: null, groundLayer: null, nightLayer: null },
@@ -218,7 +217,7 @@ ManVsWorm.Game = {
   createFoods: function(nthDday) { // "Foods" consistency over spelling
     var food, foods = this.groups.foods, numFoodsToProduce = function(day) { return (day >= 7 ? 9 : [3, 5, 7, 7, 7, 9][day-1]); };
 
-    foods.removeAll(true); // new group for each day / night
+    foods.removeAll(true); // new group mwembers for each day / night
     _.times(
       numFoodsToProduce(nthDday),
       function() {
@@ -315,13 +314,8 @@ ManVsWorm.Game = {
       hole.anchor.setTo(0, 1);
       hole.alpha = 0;
       this.add.tween(hole).to({ alpha: 1 }, 1000, "Sine.easeInOut", true);
+      hole.props = { col: col, row: row };
 
-      if ( this.holelist[col] ) { // holes already exist in this column
-        this.holelist[col]["amount"]++;
-        this.holelist[col]["tiles"].push(hole);
-      } else { // first hole in this column
-        this.holelist[col] = { amount: 1, tiles: [hole] };
-      }
       if (this.houselist[col]) this.collapseHouse(col);
     } else {
       // play sound unsuccessful
