@@ -6,6 +6,7 @@ Berlin Minijam July 2015
 
 0.1 Berlin Minijam version  
 0.2 Rewrite with Phaser.io  
+0.3 Update to ES6  
 
 ### Made by:
 
@@ -18,5 +19,3 @@ Sound/Music: Sven Schwalbe
 Code: GPL v.3  
 Art: CC BY-NC-SA 4.0  
 Sound/Music: CC BY-NC-SA 4.0  
-
-

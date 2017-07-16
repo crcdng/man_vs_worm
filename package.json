@@ -1,0 +1,29 @@
+{
+  "name": "man_vs_worm",
+  "version": "0.3.0",
+  "description": "man vs. worm - the external battle",
+  "main": "app.js",
+  "scripts": {
+    "build": "webpack",
+    "dev": "webpack-dev-server --hot --inline --output-public-path=/dist/",
+    "test": "semistandard src/*.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "GPL-3.0",
+  "devDependencies": {
+    "babel-core": "^6.24.1",
+    "babel-loader": "^7.0.0",
+    "babel-preset-env": "^1.5.1",
+    "expose-loader": "^0.7.3",
+    "semistandard": "^11.0.0",
+    "tape": "^4.6.3",
+    "webpack": "^2.6.1",
+    "webpack-dev-server": "^2.4.5"
+  },
+  "dependencies": {
+    "lodash": "^4.17.4",
+    "phaser-ce": "^2.8.2",
+    "phaser-manifest-loader": "^2.0.0"
+  }
+}
