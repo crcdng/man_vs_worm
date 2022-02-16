@@ -1,6 +1,6 @@
 # Man vs. Worm
 
-Work in Progress
+Out of Date - would likely port to Flutter / [Flame Engine](https://flame-engine.org/) if time allows.  
 
 Berlin Minijam July 2015
 
